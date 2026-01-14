@@ -18,7 +18,7 @@ export class ProductAuthContract {
     this.signer = new ethers.Wallet(config.privateKey, this.provider);
     this.contract = new ethers.Contract(
       config.contractAddress,
-      ProductAuthenticationABI.abi,
+      ProductAuthenticationABI,
       this.signer
     );
   }
