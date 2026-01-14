@@ -46,6 +46,7 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/multer": "^1.4.11",
+    "@types/pg": "^8.10.9",
     "@types/uuid": "^9.0.7",
     "hardhat": "^2.22.0",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
