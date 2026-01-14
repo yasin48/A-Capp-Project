@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    
+
     const serialNumber = formData.get('serialNumber') as string;
     const brand = formData.get('brand') as string;
     const productName = formData.get('productName') as string;
@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
         const result = await uploadFile(buffer, file.name, 'product-images');
         imageUrls.push(result.url);
       }
+    }
+
     const productId = uuidv4();
 
     // Store in database via Supabase
