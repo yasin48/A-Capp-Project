@@ -10,8 +10,7 @@
     "lint": "next lint",
     "compile-contracts": "hardhat compile",
     "test-contracts": "hardhat test",
-    "deploy-contracts": "hardhat run scripts/deploy.ts",
-    "init-db": "ts-node scripts/init-db.ts"
+    "deploy-contracts": "hardhat run scripts/deploy.ts"
   },
   "dependencies": {
     "next": "^14.0.0",
@@ -35,7 +34,8 @@
     "zod": "^3.22.4",
     "axios": "^1.5.1",
     "date-fns": "^2.30.0",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "@supabase/supabase-js": "^2.48.0"
   },
   "devDependencies": {
     "tailwindcss": "^3.3.5",

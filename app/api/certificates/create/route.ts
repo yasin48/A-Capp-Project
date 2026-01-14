@@ -1,6 +1,6 @@
 // API Route: Create digital certificate (Step 3 - Certificate Creation)
 import { NextRequest, NextResponse } from 'next/server';
-import { getPostgreSQLPool } from '@/lib/database/connection';
+import { supabase } from '@/lib/database/connection';
 import { generateHash } from '@/lib/blockchain/hash';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
@@ -17,39 +17,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const pool = getPostgreSQLPool();
-    if (!pool) {
-      return NextResponse.json(
-        { success: false, error: 'Database not connected' },
-        { status: 500 }
-      );
-    }
+    // Get product and latest verification data for an authenticated product
+    const { data: product, error: productError } = await supabase
+      .from('products')
+      .select(
+        `
+          id,
+          serial_number,
+          brand,
+          product_name,
+          status,
+          verifications!inner (
+            id,
+            decision,
+            notes,
+            verified_at
+          )
+        `
+      )
+      .eq('id', productId)
+      .eq('status', 'authentic')
+      .order('verified_at', { referencedTable: 'verifications', ascending: false })
+      .limit(1)
+      .single();
 
-    // Get product and verification data
-    const productResult = await pool.query(
-      `SELECT p.*, v.id as verification_id, v.decision, v.notes, v.verified_at
-       FROM products p
-       JOIN verifications v ON p.id = v.product_id
-       WHERE p.id = $1 AND p.status = 'authentic'`,
-      [productId]
-    );
-
-    if (productResult.rows.length === 0) {
+    if (productError || !product) {
       return NextResponse.json(
         { success: false, error: 'Product not found or not authenticated' },
         { status: 404 }
       );
     }
 
-    const product = productResult.rows[0];
+    const verification = product.verifications?.[0] || product.verifications;
 
     // Create certificate JSON
     const certificateData = {
       productId: product.id,
-      authenticationDecision: product.decision,
+      authenticationDecision: verification?.decision || 'authentic',
       timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
-      reason: product.notes || 'Product verified as authentic',
-      notes: product.notes,
+      reason: verification?.notes || 'Product verified as authentic',
+      notes: verification?.notes,
       productData: {
         productId: product.id,
         serialNumber: product.serial_number,
@@ -63,30 +70,43 @@ export async function POST(request: NextRequest) {
 
     // Store certificate
     const certificateId = uuidv4();
-    await pool.query(
-      `INSERT INTO certificates (
-        id, product_id, verification_id, product_data, authentication_decision,
-        timestamp, reason, notes, json_data, hash
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-      [
-        certificateId,
-        product.id,
-        product.verification_id,
-        JSON.stringify(certificateData.productData),
-        certificateData.authenticationDecision,
-        certificateData.timestamp,
-        certificateData.reason,
-        certificateData.notes,
-        jsonData,
-        hash,
-      ]
-    );
+    const { error: insertError } = await supabase.from('certificates').insert({
+      id: certificateId,
+      product_id: product.id,
+      verification_id: verification?.id || null,
+      product_data: certificateData.productData,
+      authentication_decision: certificateData.authenticationDecision,
+      timestamp: certificateData.timestamp,
+      reason: certificateData.reason,
+      notes: certificateData.notes,
+      json_data: jsonData,
+      hash,
+    });
+
+    if (insertError) {
+      console.error('Error inserting certificate:', insertError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to save certificate' },
+        { status: 500 }
+      );
+    }
 
     // Update product status to certified
-    await pool.query(
-      `UPDATE products SET status = 'certified', updated_at = $1 WHERE id = $2`,
-      [new Date(), productId]
-    );
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({
+        status: 'certified',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', productId);
+
+    if (updateError) {
+      console.error('Error updating product status:', updateError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to update product status' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

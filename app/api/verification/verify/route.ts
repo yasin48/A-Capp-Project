@@ -1,6 +1,6 @@
 // API Route: Verify product (Step 2 - Verification)
 import { NextRequest, NextResponse } from 'next/server';
-import { getPostgreSQLPool } from '@/lib/database/connection';
+import { supabase } from '@/lib/database/connection';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
@@ -22,58 +22,55 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const pool = getPostgreSQLPool();
-    if (!pool) {
+    // Create verification record
+    const verificationId = uuidv4();
+    const { error: verificationError } = await supabase.from('verifications').insert({
+      id: verificationId,
+      product_id: productId,
+      authenticator_id: authenticatorId,
+      decision,
+      notes: notes || null,
+      cross_check_results: crossCheckResults || null,
+      verified_at: new Date().toISOString(),
+    });
+
+    if (verificationError) {
+      console.error('Error inserting verification:', verificationError);
       return NextResponse.json(
-        { success: false, error: 'Database not connected' },
+        { success: false, error: 'Failed to create verification record' },
         { status: 500 }
       );
     }
 
-    // Start transaction
-    await pool.query('BEGIN');
+    // Update product status
+    const newStatus = decision === 'authentic' ? 'authentic' : 'not_authentic';
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({
+        status: newStatus,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: authenticatorId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', productId);
 
-    try {
-      // Create verification record
-      const verificationId = uuidv4();
-      await pool.query(
-        `INSERT INTO verifications (id, product_id, authenticator_id, decision, notes, cross_check_results, verified_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          verificationId,
-          productId,
-          authenticatorId,
-          decision,
-          notes || null,
-          crossCheckResults ? JSON.stringify(crossCheckResults) : null,
-          new Date(),
-        ]
+    if (updateError) {
+      console.error('Error updating product:', updateError);
+      return NextResponse.json(
+        { success: false, error: 'Failed to update product status' },
+        { status: 500 }
       );
-
-      // Update product status
-      const newStatus = decision === 'authentic' ? 'authentic' : 'not_authentic';
-      await pool.query(
-        `UPDATE products 
-         SET status = $1, reviewed_at = $2, reviewed_by = $3, updated_at = $4
-         WHERE id = $5`,
-        [newStatus, new Date(), authenticatorId, new Date(), productId]
-      );
-
-      await pool.query('COMMIT');
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          verificationId,
-          productId,
-          decision,
-          status: newStatus,
-        },
-      });
-    } catch (error) {
-      await pool.query('ROLLBACK');
-      throw error;
     }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        verificationId,
+        productId,
+        decision,
+        status: newStatus,
+      },
+    });
   } catch (error: any) {
     console.error('Error verifying product:', error);
     return NextResponse.json(

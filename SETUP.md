@@ -3,7 +3,7 @@
 ## Prerequisites
 
 1. **Node.js 18+** installed
-2. **PostgreSQL** or **MongoDB** database
+2. **Supabase** project (PostgreSQL managed by Supabase)
 3. **MetaMask** or wallet with testnet tokens (for blockchain)
 4. **AWS S3** or **Cloudinary** account (for file storage)
 
@@ -24,26 +24,17 @@ cp .env.example .env
 ```
 
 Required configurations:
-- **Database**: Either `DATABASE_URL` (PostgreSQL) or `MONGODB_URI` (MongoDB)
+- **Database** (Supabase): `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - **JWT Secret**: `JWT_SECRET` for authentication
 - **File Storage**: Either AWS S3 or Cloudinary credentials
 - **Blockchain**: RPC URL, Private Key, and Contract Address
 
 ### 3. Set Up Database
 
-#### For PostgreSQL:
-
-```bash
-# Create database
-createdb product_auth_db
-
-# Initialize schema
-npm run init-db
-```
-
-#### For MongoDB:
-
-MongoDB collections are created automatically when first document is inserted. Just ensure your `MONGODB_URI` is correct.
+Use Supabase SQL editor or migration tools to create the required tables
+(`products`, `verifications`, `certificates`, `blockchain_records`, `users`)
+based on the schema defined in `lib/database/models.ts`. Supabase manages the
+PostgreSQL instance for you, so no local database setup is required.
 
 ### 4. Deploy Smart Contract
 
@@ -84,9 +75,8 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## Troubleshooting
 
 ### Database Connection Issues
-- Ensure database is running
-- Check connection string format
-- For PostgreSQL: `postgresql://user:password@localhost:5432/dbname`
+- Ensure Supabase project is running
+- Check `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ### Blockchain Issues
 - Ensure you have testnet tokens in your wallet

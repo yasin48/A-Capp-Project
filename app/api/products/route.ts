@@ -1,6 +1,6 @@
 // API Route: Get user's products
 import { NextRequest, NextResponse } from 'next/server';
-import { getPostgreSQLPool } from '@/lib/database/connection';
+import { supabase } from '@/lib/database/connection';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,29 +15,29 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const pool = getPostgreSQLPool();
-    if (!pool) {
+    let query = supabase
+      .from('products')
+      .select('*')
+      .eq('user_id', userId)
+      .order('submitted_at', { ascending: false });
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching products:', error);
       return NextResponse.json(
-        { success: false, error: 'Database not connected' },
+        { success: false, error: 'Failed to fetch products' },
         { status: 500 }
       );
     }
 
-    let query = 'SELECT * FROM products WHERE user_id = $1';
-    const params: any[] = [userId];
-
-    if (status) {
-      query += ' AND status = $2';
-      params.push(status);
-    }
-
-    query += ' ORDER BY submitted_at DESC';
-
-    const result = await pool.query(query, params);
-
     return NextResponse.json({
       success: true,
-      data: result.rows,
+      data: data || [],
     });
   } catch (error: any) {
     console.error('Error fetching products:', error);

@@ -1,6 +1,6 @@
 // API Route: Product Submission (Step 1 - Ingestion)
 import { NextRequest, NextResponse } from 'next/server';
-import { getPostgreSQLPool } from '@/lib/database/connection';
+import { supabase } from '@/lib/database/connection';
 import { uploadFile } from '@/lib/storage/upload';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -34,41 +34,39 @@ export async function POST(request: NextRequest) {
         const result = await uploadFile(buffer, file.name, 'product-images');
         imageUrls.push(result.url);
       }
-    }
+    const productId = uuidv4();
 
-    // Store in database
-    const pool = getPostgreSQLPool();
-    if (!pool) {
+    // Store in database via Supabase
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        id: productId,
+        user_id: userId,
+        serial_number: serialNumber,
+        brand,
+        product_name: productName,
+        description: description || null,
+        images: imageUrls,
+        status: 'pending',
+        submitted_at: new Date().toISOString(),
+      })
+      .select('id, status, submitted_at')
+      .single();
+
+    if (error) {
+      console.error('Error inserting product:', error);
       return NextResponse.json(
-        { success: false, error: 'Database not connected' },
+        { success: false, error: 'Failed to save product' },
         { status: 500 }
       );
     }
 
-    const productId = uuidv4();
-    const result = await pool.query(
-      `INSERT INTO products (id, user_id, serial_number, brand, product_name, description, images, status, submitted_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING id, status, submitted_at`,
-      [
-        productId,
-        userId,
-        serialNumber,
-        brand,
-        productName,
-        description || null,
-        imageUrls,
-        'pending',
-        new Date(),
-      ]
-    );
-
     return NextResponse.json({
       success: true,
       data: {
-        productId: result.rows[0].id,
-        status: result.rows[0].status,
-        submittedAt: result.rows[0].submitted_at,
+        productId: data.id,
+        status: data.status,
+        submittedAt: data.submitted_at,
         imageUrls,
       },
     });

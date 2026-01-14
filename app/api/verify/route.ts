@@ -1,6 +1,6 @@
 // API Route: Public verification (Step 5 - Public Verification)
 import { NextRequest, NextResponse } from 'next/server';
-import { getPostgreSQLPool } from '@/lib/database/connection';
+import { supabase } from '@/lib/database/connection';
 import { getContractInstance } from '@/lib/blockchain/contract';
 import { verifyHash } from '@/lib/blockchain/hash';
 
@@ -17,25 +17,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const pool = getPostgreSQLPool();
-    if (!pool) {
-      return NextResponse.json(
-        { success: false, error: 'Database not connected' },
-        { status: 500 }
-      );
-    }
-
     let certificateHash = hash;
     let certificate: any = null;
 
     // If productId provided, get certificate
     if (productId && !hash) {
-      const certResult = await pool.query(
-        'SELECT * FROM certificates WHERE product_id = $1 ORDER BY created_at DESC LIMIT 1',
-        [productId]
-      );
+      const { data, error } = await supabase
+        .from('certificates')
+        .select('*')
+        .eq('product_id', productId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (certResult.rows.length === 0) {
+      if (error) {
+        console.error('Error fetching certificate by productId:', error);
+        return NextResponse.json(
+          { success: false, error: 'Failed to fetch certificate' },
+          { status: 500 }
+        );
+      }
+
+      if (!data) {
         return NextResponse.json({
           success: true,
           data: {
@@ -46,17 +49,26 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      certificate = certResult.rows[0];
+      certificate = data;
       certificateHash = certificate.hash;
     } else if (hash) {
       // Get certificate by hash
-      const certResult = await pool.query(
-        'SELECT * FROM certificates WHERE hash = $1',
-        [hash]
-      );
+      const { data, error } = await supabase
+        .from('certificates')
+        .select('*')
+        .eq('hash', hash)
+        .maybeSingle();
 
-      if (certResult.rows.length > 0) {
-        certificate = certResult.rows[0];
+      if (error) {
+        console.error('Error fetching certificate by hash:', error);
+        return NextResponse.json(
+          { success: false, error: 'Failed to fetch certificate' },
+          { status: 500 }
+        );
+      }
+
+      if (data) {
+        certificate = data;
       }
     }
 
@@ -89,17 +101,24 @@ export async function GET(request: NextRequest) {
     }
 
     // Get blockchain record
-    const recordResult = await pool.query(
-      'SELECT * FROM blockchain_records WHERE hash = $1 ORDER BY created_at DESC LIMIT 1',
-      [certificateHash]
-    );
+    const { data: record, error: recordError } = await supabase
+      .from('blockchain_records')
+      .select('*')
+      .eq('hash', certificateHash)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recordError) {
+      console.error('Error fetching blockchain record:', recordError);
+    }
 
     return NextResponse.json({
       success: true,
       data: {
         verified: blockchainResult.exists && (certificate ? hashMatches : true),
         exists: blockchainResult.exists,
-        productId: blockchainResult.productId,
+        productId: certificate?.product_id ?? blockchainResult.productId,
         timestamp: blockchainResult.timestamp,
         certificate: certificate
           ? {
@@ -109,11 +128,11 @@ export async function GET(request: NextRequest) {
               reason: certificate.reason,
             }
           : null,
-        blockchainRecord: recordResult.rows.length > 0
+        blockchainRecord: record
           ? {
-              txHash: recordResult.rows[0].tx_hash,
-              blockNumber: recordResult.rows[0].block_number,
-              network: recordResult.rows[0].network,
+              txHash: record.tx_hash,
+              blockNumber: record.block_number,
+              network: record.network,
             }
           : null,
       },

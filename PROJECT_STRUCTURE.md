@@ -44,9 +44,7 @@ product-authentication-system/
 │   └── ProductAuthentication.sol  # Main smart contract
 │
 ├── scripts/                       # Scripts
-│   ├── deploy.ts                  # Deploy smart contract
-│   ├── init-db.ts                 # Initialize PostgreSQL database
-│   └── init-db.js                 # Initialize MongoDB
+│   └── deploy.ts                  # Deploy smart contract
 │
 ├── types/                         # TypeScript types
 │   └── index.ts                   # Type definitions
