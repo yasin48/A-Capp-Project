@@ -4,11 +4,8 @@ import { getPostgreSQLPool } from '@/lib/database/connection';
 import { uploadFile } from '@/lib/storage/upload';
 import { v4 as uuidv4 } from 'uuid';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
