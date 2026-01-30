@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 interface Product {
   id: string;
   serial_number: string;

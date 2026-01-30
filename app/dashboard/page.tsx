@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
 
+export const dynamic = 'force-dynamic';
+
 interface Product {
   id: string;
   serial_number: string;
@@ -28,7 +30,7 @@ export default function DashboardPage() {
 
   const fetchProducts = async () => {
     if (!user) return;
-    
+
     try {
       const response = await fetch('/api/products');
       const result = await response.json();
