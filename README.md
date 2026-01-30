@@ -14,19 +14,19 @@ A blockchain-based product authentication system that allows users to submit pro
 
 - **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes, Express
-- **Database**: PostgreSQL (or MongoDB)
+- **Database**: PostgreSQL (Supabase)
 - **Blockchain**: Ethereum/Polygon using Ethers.js
-- **File Storage**: AWS S3 or Cloudinary
+- **File Storage**: Supabase 
 - **Authentication**: JWT
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ 
-- PostgreSQL (or MongoDB)
+- Node.js 
+- PostgreSQL(Supabase)
 - MetaMask or wallet with testnet tokens
-- AWS account (for S3) or Cloudinary account
+- Supabase for storage
 
 ### Installation
 
