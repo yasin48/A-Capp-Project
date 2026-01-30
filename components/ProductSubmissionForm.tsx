@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Upload, X } from 'lucide-react';
 
 export default function ProductSubmissionForm() {
   const router = useRouter();
@@ -15,6 +20,7 @@ export default function ProductSubmissionForm() {
     description: '',
   });
   const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -25,8 +31,23 @@ export default function ProductSubmissionForm() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setImages(Array.from(e.target.files));
+      const files = Array.from(e.target.files);
+      setImages(files);
+
+      // Create preview URLs
+      const previews = files.map(file => URL.createObjectURL(file));
+      setImagePreviews(previews);
     }
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    setImages(newImages);
+    setImagePreviews(newPreviews);
+
+    // Revoke the URL to free memory
+    URL.revokeObjectURL(imagePreviews[index]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,112 +90,151 @@ export default function ProductSubmissionForm() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Submit Product for Authentication</h1>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-12 px-4">
+      <div className="max-w-2xl mx-auto">
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-3xl">Submit Product for Authentication</CardTitle>
+            <CardDescription className="text-base">
+              Fill in the details below to submit your product for verification
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6">
+                Product submitted successfully! Redirecting to dashboard...
+              </div>
+            )}
 
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          Product submitted successfully! Redirecting to dashboard...
-        </div>
-      )}
+            {error && (
+              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg mb-6">
+                {error}
+              </div>
+            )}
 
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Serial Number */}
+              <div className="space-y-2">
+                <Label htmlFor="serialNumber">Serial Number *</Label>
+                <Input
+                  id="serialNumber"
+                  name="serialNumber"
+                  type="text"
+                  placeholder="Enter product serial number"
+                  required
+                  value={formData.serialNumber}
+                  onChange={handleInputChange}
+                />
+              </div>
 
-      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="serialNumber">
-            Serial Number *
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="serialNumber"
-            name="serialNumber"
-            type="text"
-            required
-            value={formData.serialNumber}
-            onChange={handleInputChange}
-          />
-        </div>
+              {/* Brand */}
+              <div className="space-y-2">
+                <Label htmlFor="brand">Brand *</Label>
+                <Input
+                  id="brand"
+                  name="brand"
+                  type="text"
+                  placeholder="Enter brand name"
+                  required
+                  value={formData.brand}
+                  onChange={handleInputChange}
+                />
+              </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="brand">
-            Brand *
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="brand"
-            name="brand"
-            type="text"
-            required
-            value={formData.brand}
-            onChange={handleInputChange}
-          />
-        </div>
+              {/* Product Name */}
+              <div className="space-y-2">
+                <Label htmlFor="productName">Product Name *</Label>
+                <Input
+                  id="productName"
+                  name="productName"
+                  type="text"
+                  placeholder="Enter product name"
+                  required
+                  value={formData.productName}
+                  onChange={handleInputChange}
+                />
+              </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="productName">
-            Product Name *
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="productName"
-            name="productName"
-            type="text"
-            required
-            value={formData.productName}
-            onChange={handleInputChange}
-          />
-        </div>
+              {/* Description */}
+              <div className="space-y-2">
+                <Label htmlFor="description">Description (Optional)</Label>
+                <textarea
+                  id="description"
+                  name="description"
+                  rows={4}
+                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  placeholder="Add any additional details about the product"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                />
+              </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">
-            Description
-          </label>
-          <textarea
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="description"
-            name="description"
-            rows={4}
-            value={formData.description}
-            onChange={handleInputChange}
-          />
-        </div>
+              {/* Image Upload */}
+              <div className="space-y-2">
+                <Label htmlFor="images">Product Images *</Label>
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                  <input
+                    id="images"
+                    name="images"
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    required={images.length === 0}
+                    className="hidden"
+                  />
+                  <label htmlFor="images" className="cursor-pointer">
+                    <Upload className="w-12 h-12 text-slate-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-600 mb-1">
+                      Click to upload images
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      PNG, JPG up to 10MB
+                    </p>
+                  </label>
+                </div>
 
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="images">
-            Product Images *
-          </label>
-          <input
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            id="images"
-            name="images"
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageChange}
-            required
-          />
-          {images.length > 0 && (
-            <p className="text-sm text-gray-600 mt-2">
-              {images.length} file(s) selected
-            </p>
-          )}
-        </div>
+                {/* Image Previews */}
+                {imagePreviews.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={preview}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border-2 border-slate-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {images.length > 0 && (
+                  <p className="text-sm text-slate-600 mt-2">
+                    {images.length} file(s) selected
+                  </p>
+                )}
+              </div>
 
-        <div className="flex items-center justify-between">
-          <button
-            className="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:opacity-50"
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? 'Submitting...' : 'Submit Product'}
-          </button>
-        </div>
-      </form>
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={loading}
+              >
+                {loading ? 'Submitting...' : 'Submit Product'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

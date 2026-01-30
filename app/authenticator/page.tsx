@@ -4,6 +4,11 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Package, Calendar, User, CheckCircle2, XCircle, Shield } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,10 +77,6 @@ export default function AuthenticatorPage() {
       const result = await response.json();
 
       if (result.success) {
-        // If authentic, create certificate and store on blockchain
-        if (decision === 'authentic') {
-          await createCertificateAndStoreOnBlockchain(selectedProduct.id);
-        }
         setSelectedProduct(null);
         setNotes('');
         fetchPendingProducts();
@@ -90,49 +91,19 @@ export default function AuthenticatorPage() {
     }
   };
 
-  const createCertificateAndStoreOnBlockchain = async (productId: string) => {
-    try {
-      // Create certificate
-      const certResponse = await fetch('/api/certificates/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ productId }),
-      });
-
-      const certResult = await certResponse.json();
-
-      if (certResult.success) {
-        // Store on blockchain
-        const blockchainResponse = await fetch('/api/blockchain/store', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            certificateId: certResult.data.certificateId,
-            productId,
-          }),
-        });
-
-        const blockchainResult = await blockchainResponse.json();
-        if (blockchainResult.success) {
-          alert(
-            `Product verified and stored on blockchain!\nTransaction: ${blockchainResult.data.txHash}`
-          );
-        }
-      }
-    } catch (err) {
-      console.error('Error creating certificate:', err);
-    }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   // Show loading state first to prevent flash during logout
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+        <div className="text-xl text-slate-600">Loading...</div>
       </div>
     );
   }
@@ -145,181 +116,214 @@ export default function AuthenticatorPage() {
   // Check if user has authenticator role
   if (role !== 'authenticator') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
-          <div className="text-6xl mb-4">🔒</div>
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Unauthorized Access</h1>
-          <p className="text-gray-600 mb-6">
-            You do not have permission to access the authenticator dashboard.
-            Only users with the authenticator role can verify products.
-          </p>
-          <Link
-            href="/dashboard"
-            className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 inline-block"
-          >
-            Go to Dashboard
-          </Link>
-        </div>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center p-4">
+        <Card className="max-w-md shadow-lg">
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-destructive" />
+            </div>
+            <CardTitle className="text-2xl text-destructive">Unauthorized Access</CardTitle>
+            <CardDescription className="text-base">
+              You do not have permission to access the authenticator dashboard.
+              Only users with the authenticator role can verify products.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard">
+              <Button className="w-full">Go to Dashboard</Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Authenticator Dashboard</h1>
-          <Link
-            href="/"
-            className="text-primary-600 hover:text-primary-700"
-          >
-            ← Back to Home
-          </Link>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <Card className="mb-8 border-2">
+          <CardHeader>
+            <CardTitle className="text-2xl flex items-center gap-2">
+              <Shield className="w-6 h-6 text-primary" />
+              Authenticator Dashboard
+            </CardTitle>
+            <CardDescription className="text-base">
+              Review and verify pending product submissions
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        {/* Pending Products */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Pending Verifications</h2>
+          <p className="text-slate-600">Products awaiting authentication review</p>
         </div>
 
-        {selectedProduct ? (
-          <div className="bg-white rounded-lg shadow-lg p-6 max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-4">Review Product</h2>
-
-            <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div>
-                <h3 className="font-semibold mb-2">Product Information</h3>
-                <p className="mb-2">
-                  <span className="font-medium">Name:</span> {selectedProduct.product_name}
-                </p>
-                <p className="mb-2">
-                  <span className="font-medium">Brand:</span> {selectedProduct.brand}
-                </p>
-                <p className="mb-2">
-                  <span className="font-medium">Serial Number:</span>{' '}
-                  {selectedProduct.serial_number}
-                </p>
-                <p className="mb-2">
-                  <span className="font-medium">Description:</span>{' '}
-                  {selectedProduct.description || 'N/A'}
-                </p>
-                <p className="mb-2">
-                  <span className="font-medium">Submitted by:</span>{' '}
-                  {selectedProduct.user_email}
-                </p>
+        {products.length === 0 ? (
+          <Card className="border-2 border-dashed">
+            <CardHeader className="text-center py-12">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-8 h-8 text-slate-400" />
               </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Images</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {selectedProduct.images?.map((img, idx) => (
-                    <img
-                      key={idx}
-                      src={img}
-                      alt={`Product image ${idx + 1}`}
-                      className="w-full h-32 object-cover rounded"
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-gray-700 font-bold mb-2">
-                Decision *
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="authentic"
-                    checked={decision === 'authentic'}
-                    onChange={(e) => setDecision(e.target.value as 'authentic')}
-                    className="mr-2"
-                  />
-                  Authentic
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="not_authentic"
-                    checked={decision === 'not_authentic'}
-                    onChange={(e) =>
-                      setDecision(e.target.value as 'not_authentic')
-                    }
-                    className="mr-2"
-                  />
-                  Not Authentic
-                </label>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-gray-700 font-bold mb-2">
-                Notes
-              </label>
-              <textarea
-                className="w-full border rounded px-3 py-2"
-                rows={4}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add verification notes..."
-              />
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={handleVerify}
-                disabled={verifying}
-                className="bg-primary-600 text-white px-6 py-2 rounded hover:bg-primary-700 disabled:opacity-50"
-              >
-                {verifying ? 'Processing...' : 'Submit Verification'}
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedProduct(null);
-                  setNotes('');
-                }}
-                className="bg-gray-300 text-gray-700 px-6 py-2 rounded hover:bg-gray-400"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+              <CardTitle className="text-xl text-slate-600">No pending verifications</CardTitle>
+              <CardDescription className="text-base">
+                All products have been reviewed
+              </CardDescription>
+            </CardHeader>
+          </Card>
         ) : (
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">
-              Pending Verifications ({products.length})
-            </h2>
-
-            {products.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-8 text-center">
-                <p className="text-gray-600">No pending products to verify.</p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {products.map((product) => (
-                  <div
-                    key={product.id}
-                    className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map((product) => (
+              <Card key={product.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  {product.images && product.images.length > 0 && (
+                    <div className="w-full h-48 bg-slate-100 rounded-lg mb-4 overflow-hidden">
+                      <img
+                        src={product.images[0]}
+                        alt={product.product_name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <CardTitle className="text-lg">{product.product_name}</CardTitle>
+                  <CardDescription className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Package className="w-4 h-4" />
+                      <span className="font-medium">{product.brand}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      SN: {product.serial_number}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <User className="w-3 h-3" />
+                      {product.user_email}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="w-3 h-3" />
+                      {formatDate(product.submitted_at)}
+                    </div>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    className="w-full"
                     onClick={() => setSelectedProduct(product)}
                   >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-xl font-semibold mb-2">
-                          {product.product_name}
-                        </h3>
-                        <p className="text-gray-600">
-                          {product.brand} • {product.serial_number}
-                        </p>
-                      </div>
-                      {product.images && product.images.length > 0 && (
-                        <img
-                          src={product.images[0]}
-                          alt={product.product_name}
-                          className="w-24 h-24 object-cover rounded"
-                        />
-                      )}
-                    </div>
+                    Review Product
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Verification Modal */}
+        {selectedProduct && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <CardTitle className="text-2xl">Verify Product</CardTitle>
+                <CardDescription>Review product details and make your decision</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Product Images */}
+                {selectedProduct.images && selectedProduct.images.length > 0 && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {selectedProduct.images.map((img, idx) => (
+                      <img
+                        key={idx}
+                        src={img}
+                        alt={`Product ${idx + 1}`}
+                        className="w-full h-48 object-cover rounded-lg border-2"
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                )}
+
+                {/* Product Details */}
+                <div className="space-y-3 bg-slate-50 p-4 rounded-lg">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Product Name</Label>
+                    <p className="font-medium">{selectedProduct.product_name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Brand</Label>
+                    <p className="font-medium">{selectedProduct.brand}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Serial Number</Label>
+                    <p className="font-medium">{selectedProduct.serial_number}</p>
+                  </div>
+                  {selectedProduct.description && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Description</Label>
+                      <p className="text-sm">{selectedProduct.description}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Decision */}
+                <div className="space-y-3">
+                  <Label>Verification Decision</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button
+                      type="button"
+                      variant={decision === 'authentic' ? 'default' : 'outline'}
+                      className="gap-2"
+                      onClick={() => setDecision('authentic')}
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      Authentic
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={decision === 'not_authentic' ? 'destructive' : 'outline'}
+                      className="gap-2"
+                      onClick={() => setDecision('not_authentic')}
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Not Authentic
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Verification Notes</Label>
+                  <textarea
+                    id="notes"
+                    rows={4}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    placeholder="Add notes about your verification decision..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-4">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setSelectedProduct(null);
+                      setNotes('');
+                    }}
+                    disabled={verifying}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={handleVerify}
+                    disabled={verifying}
+                  >
+                    {verifying ? 'Submitting...' : 'Submit Verification'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>

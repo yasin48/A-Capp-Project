@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Package, Calendar, CheckCircle2, Clock, XCircle, Shield } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,119 +50,144 @@ export default function DashboardPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      under_review: 'bg-blue-100 text-blue-800',
-      authentic: 'bg-green-100 text-green-800',
-      not_authentic: 'bg-red-100 text-red-800',
-      certified: 'bg-purple-100 text-purple-800',
+  const getStatusBadge = (status: string) => {
+    const badges: Record<string, { color: string; icon: any; label: string }> = {
+      pending: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, label: 'Pending' },
+      under_review: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Shield, label: 'Under Review' },
+      authentic: { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle2, label: 'Verified' },
+      not_authentic: { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, label: 'Not Authentic' },
+      certified: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: CheckCircle2, label: 'Certified' },
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    const badge = badges[status] || { color: 'bg-gray-100 text-gray-800 border-gray-200', icon: Clock, label: status };
+    const Icon = badge.icon;
+    return (
+      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${badge.color}`}>
+        <Icon className="w-3 h-3" />
+        {badge.label}
+      </span>
+    );
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+        <div className="text-xl text-slate-600">Loading...</div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Please log in to view your dashboard.</p>
-          <Link
-            href="/login"
-            className="bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700"
-          >
-            Go to Login
-          </Link>
-        </div>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Authentication Required</CardTitle>
+            <CardDescription>Please log in to view your dashboard.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/login">
+              <Button className="w-full">Sign In</Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">My Products</h1>
-            <p className="text-gray-600 mt-1">Welcome back, {user.email}</p>
-          </div>
-          <Link
-            href="/submit"
-            className="bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700"
-          >
-            Submit New Product
-          </Link>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <div className="container mx-auto px-4 py-8">
+        {/* Welcome Section */}
+        <Card className="mb-8 border-2">
+          <CardHeader>
+            <CardTitle className="text-2xl">Welcome back!</CardTitle>
+            <CardDescription className="text-base">{user.email}</CardDescription>
+          </CardHeader>
+        </Card>
 
+        {/* Submit New Product Card */}
+        <Link href="/submit">
+          <Card className="mb-8 border-2 border-primary/20 hover:border-primary/50 transition-all cursor-pointer bg-gradient-to-br from-primary/5 to-primary/10">
+            <CardHeader className="text-center py-8">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Plus className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="text-2xl">Submit New Product</CardTitle>
+              <CardDescription className="text-base">
+                Submit a product for authentication verification
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+
+        {/* Error Message */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
+          <Card className="mb-8 border-destructive">
+            <CardContent className="pt-6">
+              <p className="text-destructive">{error}</p>
+            </CardContent>
+          </Card>
         )}
 
+        {/* Products Section */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Your Products</h2>
+          <p className="text-slate-600">Track the authentication status of your submitted products</p>
+        </div>
+
         {products.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-600 mb-4">No products submitted yet.</p>
-            <Link
-              href="/submit"
-              className="text-primary-600 hover:text-primary-700"
-            >
-              Submit your first product →
-            </Link>
-          </div>
+          <Card className="border-2 border-dashed">
+            <CardHeader className="text-center py-12">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="w-8 h-8 text-slate-400" />
+              </div>
+              <CardTitle className="text-xl text-slate-600">No products yet</CardTitle>
+              <CardDescription className="text-base">
+                Submit your first product to get started with authentication
+              </CardDescription>
+            </CardHeader>
+          </Card>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold mb-2">
-                      {product.product_name}
-                    </h2>
-                    <p className="text-gray-600 mb-2">
-                      <span className="font-medium">Brand:</span> {product.brand}
-                    </p>
-                    <p className="text-gray-600 mb-2">
-                      <span className="font-medium">Serial Number:</span>{' '}
-                      {product.serial_number}
-                    </p>
-                    <p className="text-gray-600 mb-2">
-                      <span className="font-medium">Submitted:</span>{' '}
-                      {formatDate(product.submitted_at)}
-                    </p>
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                        product.status
-                      )}`}
-                    >
-                      {product.status.replace('_', ' ').toUpperCase()}
-                    </span>
-                  </div>
+              <Card key={product.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
                   {product.images && product.images.length > 0 && (
-                    <div className="ml-4">
+                    <div className="w-full h-48 bg-slate-100 rounded-lg mb-4 overflow-hidden">
                       <img
                         src={product.images[0]}
                         alt={product.product_name}
-                        className="w-32 h-32 object-cover rounded"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   )}
-                </div>
-              </div>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <CardTitle className="text-lg">{product.product_name}</CardTitle>
+                    {getStatusBadge(product.status)}
+                  </div>
+                  <CardDescription className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Package className="w-4 h-4" />
+                      <span className="font-medium">{product.brand}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      SN: {product.serial_number}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                      <Calendar className="w-3 h-3" />
+                      {formatDate(product.submitted_at)}
+                    </div>
+                  </CardDescription>
+                </CardHeader>
+              </Card>
             ))}
           </div>
         )}
