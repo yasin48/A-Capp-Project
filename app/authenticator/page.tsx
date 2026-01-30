@@ -128,6 +128,7 @@ export default function AuthenticatorPage() {
     }
   };
 
+  // Show loading state first to prevent flash during logout
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -136,8 +137,13 @@ export default function AuthenticatorPage() {
     );
   }
 
+  // If no user, return null and let middleware handle redirect
+  if (!user) {
+    return null;
+  }
+
   // Check if user has authenticator role
-  if (!user || role !== 'authenticator') {
+  if (role !== 'authenticator') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
