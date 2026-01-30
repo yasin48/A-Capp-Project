@@ -4,6 +4,9 @@ import { supabase } from '@/lib/database/connection';
 import { getAuthenticatedUser } from '@/lib/auth/getUser';
 import { v4 as uuidv4 } from 'uuid';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     // Get authenticated user (must be an authenticator)

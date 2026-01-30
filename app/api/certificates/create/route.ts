@@ -1,9 +1,12 @@
-// API Route: Create digital certificate (Step 3 - Certificate Creation)
+// API Route: Create certificate for authenticated product
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/database/connection';
 import { generateHash } from '@/lib/blockchain/hash';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {

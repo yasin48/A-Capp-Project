@@ -1,12 +1,12 @@
-// API Route: Product Submission (Step 1 - Ingestion)
+// API Route: Submit a product for authentication
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/database/connection';
 import { uploadFile } from '@/lib/storage/upload';
 import { getAuthenticatedUser } from '@/lib/auth/getUser';
 import { v4 as uuidv4 } from 'uuid';
 
-export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {

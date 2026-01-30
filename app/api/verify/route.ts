@@ -1,6 +1,9 @@
-// API Route: Public verification (Step 5 - Public Verification)
+// API Route: Verify product authenticity by serial number
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/database/connection';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 import { getContractInstance } from '@/lib/blockchain/contract';
 import { verifyHash } from '@/lib/blockchain/hash';
 
@@ -122,18 +125,18 @@ export async function GET(request: NextRequest) {
         timestamp: blockchainResult.timestamp,
         certificate: certificate
           ? {
-              productId: certificate.product_id,
-              decision: certificate.authentication_decision,
-              timestamp: certificate.timestamp,
-              reason: certificate.reason,
-            }
+            productId: certificate.product_id,
+            decision: certificate.authentication_decision,
+            timestamp: certificate.timestamp,
+            reason: certificate.reason,
+          }
           : null,
         blockchainRecord: record
           ? {
-              txHash: record.tx_hash,
-              blockNumber: record.block_number,
-              network: record.network,
-            }
+            txHash: record.tx_hash,
+            blockNumber: record.block_number,
+            network: record.network,
+          }
           : null,
       },
     });

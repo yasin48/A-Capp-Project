@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/database/connection';
 import { getAuthenticatedUser } from '@/lib/auth/getUser';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     console.log('[API Products] Authenticating user...');

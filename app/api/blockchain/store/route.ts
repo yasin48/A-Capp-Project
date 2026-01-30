@@ -1,6 +1,9 @@
-// API Route: Store hash on blockchain (Step 4 - Blockchain Layer)
+// API Route: Store certificate on blockchain
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/database/connection';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 import { getContractInstance } from '@/lib/blockchain/contract';
 import { v4 as uuidv4 } from 'uuid';
 
