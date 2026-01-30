@@ -1,3 +1,5 @@
+'use client';
+
 import ProductSubmissionForm from '@/components/ProductSubmissionForm';
 import Link from 'next/link';
 
