@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { useRouter } from 'next/navigation';
 
 interface Product {
   id: string;
@@ -16,6 +18,8 @@ interface Product {
 }
 
 export default function AuthenticatorPage() {
+  const { user, role, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -24,8 +28,12 @@ export default function AuthenticatorPage() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    fetchPendingProducts();
-  }, []);
+    if (!authLoading && user && role === 'authenticator') {
+      fetchPendingProducts();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [user, role, authLoading]);
 
   const fetchPendingProducts = async () => {
     try {
@@ -54,7 +62,6 @@ export default function AuthenticatorPage() {
         },
         body: JSON.stringify({
           productId: selectedProduct.id,
-          authenticatorId: 'auth-123', // TODO: Get from auth context
           decision,
           notes,
         }),
@@ -119,10 +126,32 @@ export default function AuthenticatorPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  // Check if user has authenticator role
+  if (!user || role !== 'authenticator') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Unauthorized Access</h1>
+          <p className="text-gray-600 mb-6">
+            You do not have permission to access the authenticator dashboard.
+            Only users with the authenticator role can verify products.
+          </p>
+          <Link
+            href="/dashboard"
+            className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 inline-block"
+          >
+            Go to Dashboard
+          </Link>
+        </div>
       </div>
     );
   }

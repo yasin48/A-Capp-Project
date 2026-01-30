@@ -1,24 +1,29 @@
 // API Route: Get user's products
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/database/connection';
+import { getAuthenticatedUser } from '@/lib/auth/getUser';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const status = searchParams.get('status');
+    console.log('[API Products] Authenticating user...');
+    // Get authenticated user
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    console.log('[API Products] Auth result - User:', user?.email, 'Error:', authError);
 
-    if (!userId) {
+    if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: 'User ID required' },
-        { status: 400 }
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
       );
     }
+
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
 
     let query = supabase
       .from('products')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .order('submitted_at', { ascending: false });
 
     if (status) {

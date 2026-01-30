@@ -41,7 +41,6 @@ export default function ProductSubmissionForm() {
       submitFormData.append('brand', formData.brand);
       submitFormData.append('productName', formData.productName);
       submitFormData.append('description', formData.description);
-      submitFormData.append('userId', 'user-123'); // TODO: Get from auth context
 
       images.forEach((image) => {
         submitFormData.append('images', image);

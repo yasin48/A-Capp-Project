@@ -59,13 +59,7 @@ export default function VerifyPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-2xl mx-auto">
-          <div className="mb-6">
-            <Link
-              href="/"
-              className="text-primary-600 hover:text-primary-700 mb-4 inline-block"
-            >
-              ← Back to Home
-            </Link>
+        <div className="mb-6">
             <h1 className="text-3xl font-bold mb-2">Verify Product Authenticity</h1>
             <p className="text-gray-600">
               Enter a product hash or product ID to verify its authenticity on the blockchain

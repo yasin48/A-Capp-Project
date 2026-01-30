@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 interface Product {
   id: string;
@@ -14,19 +15,22 @@ interface Product {
 }
 
 export default function DashboardPage() {
+  const { user, loading: authLoading } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    if (!authLoading && user) {
+      fetchProducts();
+    }
+  }, [user, authLoading]);
 
   const fetchProducts = async () => {
+    if (!user) return;
+    
     try {
-      // TODO: Get userId from auth context
-      const userId = 'user-123';
-      const response = await fetch(`/api/products?userId=${userId}`);
+      const response = await fetch('/api/products');
       const result = await response.json();
 
       if (result.success) {
@@ -56,10 +60,26 @@ export default function DashboardPage() {
     return new Date(dateString).toLocaleDateString();
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Please log in to view your dashboard.</p>
+          <Link
+            href="/login"
+            className="bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700"
+          >
+            Go to Login
+          </Link>
+        </div>
       </div>
     );
   }
@@ -68,7 +88,10 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto py-8 px-4">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">My Products</h1>
+          <div>
+            <h1 className="text-3xl font-bold">My Products</h1>
+            <p className="text-gray-600 mt-1">Welcome back, {user.email}</p>
+          </div>
           <Link
             href="/submit"
             className="bg-primary-600 text-white px-4 py-2 rounded hover:bg-primary-700"

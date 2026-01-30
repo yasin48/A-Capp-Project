@@ -1,14 +1,31 @@
 // API Route: Verify product (Step 2 - Verification)
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/database/connection';
+import { getAuthenticatedUser } from '@/lib/auth/getUser';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { productId, authenticatorId, decision, notes, crossCheckResults } = body;
+    // Get authenticated user (must be an authenticator)
+    const { user, role, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
 
-    if (!productId || !authenticatorId || !decision) {
+    if (role !== 'authenticator') {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized. Only authenticators can verify products.' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { productId, decision, notes, crossCheckResults } = body;
+
+    if (!productId || !decision) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
@@ -27,7 +44,7 @@ export async function POST(request: NextRequest) {
     const { error: verificationError } = await supabase.from('verifications').insert({
       id: verificationId,
       product_id: productId,
-      authenticator_id: authenticatorId,
+      authenticator_id: user.id,
       decision,
       notes: notes || null,
       cross_check_results: crossCheckResults || null,
@@ -49,7 +66,7 @@ export async function POST(request: NextRequest) {
       .update({
         status: newStatus,
         reviewed_at: new Date().toISOString(),
-        reviewed_by: authenticatorId,
+        reviewed_by: user.id,
         updated_at: new Date().toISOString(),
       })
       .eq('id', productId);

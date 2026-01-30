@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/database/connection';
 import { uploadFile } from '@/lib/storage/upload';
+import { getAuthenticatedUser } from '@/lib/auth/getUser';
 import { v4 as uuidv4 } from 'uuid';
 
 export const runtime = 'nodejs';
@@ -9,15 +10,23 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user
+    const { user, error: authError } = await getAuthenticatedUser(request);
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     const formData = await request.formData();
 
     const serialNumber = formData.get('serialNumber') as string;
     const brand = formData.get('brand') as string;
     const productName = formData.get('productName') as string;
     const description = formData.get('description') as string;
-    const userId = formData.get('userId') as string; // In real app, get from JWT
 
-    if (!serialNumber || !brand || !productName || !userId) {
+    if (!serialNumber || !brand || !productName) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
@@ -43,7 +52,7 @@ export async function POST(request: NextRequest) {
       .from('products')
       .insert({
         id: productId,
-        user_id: userId,
+        user_id: user.id,
         serial_number: serialNumber,
         brand,
         product_name: productName,
