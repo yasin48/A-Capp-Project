@@ -1,7 +1,5 @@
-// File upload utilities for AWS S3 and Cloudinary
-import { S3 } from 'aws-sdk';
-import { v2 as cloudinary } from 'cloudinary';
-import { Readable } from 'stream';
+// File upload utilities for Supabase Storage
+import { supabase } from '@/lib/database/connection';
 
 export interface UploadResult {
   url: string;
@@ -9,127 +7,104 @@ export interface UploadResult {
   key?: string;
 }
 
-// Initialize Cloudinary
-if (process.env.CLOUDINARY_CLOUD_NAME) {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  });
-}
-
-// Initialize AWS S3
-let s3: S3 | null = null;
-if (process.env.AWS_ACCESS_KEY_ID) {
-  s3 = new S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION || 'us-east-1',
-  });
-}
+// File validation constants
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+];
 
 /**
- * Upload file to Cloudinary
+ * Validate file before upload
  */
-export async function uploadToCloudinary(
-  file: Buffer | Readable,
-  folder: string = 'product-auth'
-): Promise<UploadResult> {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: 'auto',
-      },
-      (error, result) => {
-        if (error) {
-          reject(error);
-        } else if (result) {
-          resolve({
-            url: result.secure_url,
-            publicId: result.public_id,
-          });
-        } else {
-          reject(new Error('Upload failed'));
-        }
-      }
-    );
-
-    if (Buffer.isBuffer(file)) {
-      uploadStream.end(file);
-    } else {
-      file.pipe(uploadStream);
-    }
-  });
-}
-
-/**
- * Upload file to AWS S3
- */
-export async function uploadToS3(
-  file: Buffer,
-  filename: string,
-  folder: string = 'product-auth'
-): Promise<UploadResult> {
-  if (!s3) {
-    throw new Error('AWS S3 not configured');
+function validateFile(file: Buffer, filename: string, mimeType?: string): void {
+  // Check file size
+  if (file.length > MAX_FILE_SIZE) {
+    throw new Error(`File size exceeds maximum allowed size of ${MAX_FILE_SIZE / 1024 / 1024}MB`);
   }
 
-  const key = `${folder}/${Date.now()}-${filename}`;
-  const bucket = process.env.AWS_S3_BUCKET;
-
-  if (!bucket) {
-    throw new Error('AWS_S3_BUCKET not configured');
+  // Check file type (if mimeType provided)
+  if (mimeType && !ALLOWED_IMAGE_TYPES.includes(mimeType)) {
+    throw new Error(`File type not allowed. Allowed types: ${ALLOWED_IMAGE_TYPES.join(', ')}`);
   }
 
-  const params: S3.PutObjectRequest = {
-    Bucket: bucket,
-    Key: key,
-    Body: file,
-    ContentType: 'image/jpeg', // Adjust based on file type
-    ACL: 'public-read',
-  };
-
-  await s3.putObject(params).promise();
-
-  const url = `https://${bucket}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${key}`;
-
-  return {
-    url,
-    key,
-  };
+  // Check file extension as fallback
+  const extension = filename.split('.').pop()?.toLowerCase();
+  const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  if (extension && !allowedExtensions.includes(extension)) {
+    throw new Error(`File extension not allowed. Allowed extensions: ${allowedExtensions.join(', ')}`);
+  }
 }
 
 /**
- * Upload file (automatically chooses storage based on config)
+ * Get MIME type from filename
+ */
+function getMimeType(filename: string): string {
+  const extension = filename.split('.').pop()?.toLowerCase();
+  const mimeTypes: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+  };
+  return mimeTypes[extension || ''] || 'image/jpeg';
+}
+
+/**
+ * Upload file to Supabase Storage
  */
 export async function uploadFile(
-  file: Buffer | Readable,
+  file: Buffer,
   filename: string,
-  folder: string = 'product-auth'
+  folder: string = 'product-images'
 ): Promise<UploadResult> {
-  // Prefer Cloudinary if configured
-  if (process.env.CLOUDINARY_CLOUD_NAME) {
-    return uploadToCloudinary(file, folder);
-  }
+  try {
+    // Validate file
+    const mimeType = getMimeType(filename);
+    validateFile(file, filename, mimeType);
 
-  // Fall back to S3
-  if (s3 && process.env.AWS_S3_BUCKET) {
-    if (Buffer.isBuffer(file)) {
-      return uploadToS3(file, filename, folder);
-    } else {
-      // Convert stream to buffer for S3
-      const chunks: Buffer[] = [];
-      return new Promise((resolve, reject) => {
-        file.on('data', (chunk) => chunks.push(chunk));
-        file.on('end', () => {
-          const buffer = Buffer.concat(chunks);
-          uploadToS3(buffer, filename, folder).then(resolve).catch(reject);
-        });
-        file.on('error', reject);
+    // Generate unique filename
+    const timestamp = Date.now();
+    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filePath = `${folder}/${timestamp}-${sanitizedFilename}`;
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file, {
+        contentType: mimeType,
+        upsert: false, // Don't overwrite existing files
       });
-    }
-  }
 
-  throw new Error('No file storage configured. Set up Cloudinary or AWS S3.');
+    if (error) {
+      console.error('Supabase Storage upload error:', error);
+      throw new Error(`Failed to upload file: ${error.message}`);
+    }
+
+    if (!data) {
+      throw new Error('Upload failed: No data returned');
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(data.path);
+
+    if (!urlData?.publicUrl) {
+      throw new Error('Failed to get public URL for uploaded file');
+    }
+
+    return {
+      url: urlData.publicUrl,
+      key: data.path,
+      publicId: data.path,
+    };
+  } catch (error: any) {
+    console.error('Error uploading file to Supabase Storage:', error);
+    throw error;
+  }
 }
