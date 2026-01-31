@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { LogOut, Shield, LayoutDashboard, Package } from 'lucide-react';
+import { LogOut, Shield, LayoutDashboard, Package, ShieldCheck } from 'lucide-react';
 
 export default function Navbar() {
   const { user, role, signOut, loading } = useAuth();
@@ -26,30 +26,40 @@ export default function Navbar() {
           </Link>
 
           {/* Navigation Links */}
-          {user && (
-            <div className="hidden md:flex items-center space-x-1">
-              <Link href="/dashboard">
-                <Button variant="ghost" className="gap-2">
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
-                </Button>
-              </Link>
-              <Link href="/submit">
-                <Button variant="ghost" className="gap-2">
-                  <Package className="w-4 h-4" />
-                  Submit Product
-                </Button>
-              </Link>
-              {role === 'authenticator' && (
-                <Link href="/authenticator">
+          <div className="hidden md:flex items-center space-x-1">
+            {/* Public Verify Link - visible to everyone */}
+            <Link href="/verify">
+              <Button variant="ghost" className="gap-2">
+                <ShieldCheck className="w-4 h-4" />
+                Verify Product
+              </Button>
+            </Link>
+
+            {user && (
+              <>
+                <Link href="/dashboard">
                   <Button variant="ghost" className="gap-2">
-                    <Shield className="w-4 h-4" />
-                    Authenticator
+                    <LayoutDashboard className="w-4 h-4" />
+                    Dashboard
                   </Button>
                 </Link>
-              )}
-            </div>
-          )}
+                <Link href="/submit">
+                  <Button variant="ghost" className="gap-2">
+                    <Package className="w-4 h-4" />
+                    Submit Product
+                  </Button>
+                </Link>
+                {role === 'authenticator' && (
+                  <Link href="/authenticator">
+                    <Button variant="ghost" className="gap-2">
+                      <Shield className="w-4 h-4" />
+                      Authenticator
+                    </Button>
+                  </Link>
+                )}
+              </>
+            )}
+          </div>
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">

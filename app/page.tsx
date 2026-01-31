@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle2, Shield, FileCheck, Database, Globe } from 'lucide-react';
+import { CheckCircle2, Shield, FileCheck, Database, Globe, ShieldCheck } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,6 +92,28 @@ export default function Home() {
               </Card>
             );
           })}
+        </div>
+      </div>
+
+      {/* Verify Product Section */}
+      <div className="container mx-auto px-4 py-16 bg-slate-100">
+        <div className="max-w-4xl mx-auto">
+          <Card className="border-2">
+            <CardHeader className="text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShieldCheck className="w-8 h-8 text-primary" />
+              </div>
+              <CardTitle className="text-3xl mb-4">Verify Product Authenticity</CardTitle>
+              <CardDescription className="text-lg mb-6">
+                Anyone can verify a product's authenticity using our blockchain-based verification system
+              </CardDescription>
+              <Link href="/verify">
+                <Button size="lg" className="text-lg px-8">
+                  Verify a Product Now
+                </Button>
+              </Link>
+            </CardHeader>
+          </Card>
         </div>
       </div>
 
