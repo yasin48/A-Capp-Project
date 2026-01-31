@@ -130,9 +130,9 @@ export default function RegisterPage() {
           <div className="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center mx-auto mb-8 animate-float">
             <Sparkles className="w-10 h-10 text-primary" />
           </div>
-          <h2 className="text-3xl font-heading font-bold text-slate-900 mb-4">Join the Network</h2>
+          <h2 className="text-3xl font-heading font-bold text-slate-900 mb-4">Join 50,000+ Collectors</h2>
           <p className="text-slate-600 mb-8">
-            Connect with authenticators, brands, and customers in a unified, secure ecosystem.
+            Protect your collection with the world's most trusted verification platform.
           </p>
 
           <div className="grid grid-cols-2 gap-4 text-left">

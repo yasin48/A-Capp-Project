@@ -26,7 +26,6 @@ export default function Navbar() {
 
   const handleSignOut = async () => {
     await signOut();
-    router.push('/');
   };
 
   const NavLink = ({ href, children, icon: Icon }: { href: string; children: React.ReactNode; icon?: any }) => {

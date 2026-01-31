@@ -92,6 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
 
+      // Force a hard redirect to clear all state
+      window.location.href = '/';
+
       if (error) {
         return { error };
       }

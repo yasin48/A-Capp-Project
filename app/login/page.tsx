@@ -125,13 +125,13 @@ export default function LoginPage() {
 
         <div className="relative z-10 space-y-8 max-w-lg">
           <blockquote className="text-2xl font-light leading-relaxed">
-            "The security and transparency provided by A-Capp has completely transformed our supply chain integrity."
+            "I finally feel safe buying pre-owned luxury bags. The verification process was smooth and the certificate adds real value."
           </blockquote>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-white to-slate-300" />
             <div>
-              <div className="font-medium">Alex Chen</div>
-              <div className="text-slate-400 text-sm">CTO, Luxury Goods Inc.</div>
+              <div className="font-medium">Jessica K.</div>
+              <div className="text-slate-400 text-sm">Bag Collector</div>
             </div>
           </div>
         </div>
