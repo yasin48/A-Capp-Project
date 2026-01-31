@@ -25,7 +25,12 @@ export default function Navbar() {
   }, []);
 
   const handleSignOut = async () => {
+    console.log('Navbar: Logout clicked');
     await signOut();
+    // Backup: Force redirect if AuthContext didn't already
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   };
 
   const NavLink = ({ href, children, icon: Icon }: { href: string; children: React.ReactNode; icon?: any }) => {
