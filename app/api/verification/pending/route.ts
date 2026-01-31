@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .in('status', ['pending', 'under_review'])
+      .in('status', ['pending', 'submitted', 'under_review'])
       .order('submitted_at', { ascending: true });
 
     if (error) {

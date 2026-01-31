@@ -2,239 +2,233 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { supabase } from '@/lib/database/connection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, X } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { GlassCard } from '@/components/ui/glass-card';
+import { Upload, X, Package, Loader2, ImagePlus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProductSubmissionForm() {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    serialNumber: '',
-    brand: '',
+    serialNumber: '', // will be auto-generated or manual? assuming manual for now as per previous
     productName: '',
+    brand: '',
     description: '',
   });
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const files = Array.from(e.target.files);
-      setImages(files);
+      const newFiles = Array.from(e.target.files);
+      setImages((prev) => [...prev, ...newFiles]);
 
-      // Create preview URLs
-      const previews = files.map(file => URL.createObjectURL(file));
-      setImagePreviews(previews);
+      const newPreviews = newFiles.map((file) => URL.createObjectURL(file));
+      setImagePreviews((prev) => [...prev, ...newPreviews]);
     }
   };
 
   const removeImage = (index: number) => {
-    const newImages = images.filter((_, i) => i !== index);
-    const newPreviews = imagePreviews.filter((_, i) => i !== index);
-    setImages(newImages);
-    setImagePreviews(newPreviews);
-
-    // Revoke the URL to free memory
-    URL.revokeObjectURL(imagePreviews[index]);
+    setImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess(false);
+    setError(null);
 
     try {
-      const submitFormData = new FormData();
-      submitFormData.append('serialNumber', formData.serialNumber);
-      submitFormData.append('brand', formData.brand);
-      submitFormData.append('productName', formData.productName);
-      submitFormData.append('description', formData.description);
+      if (!user) throw new Error('You must be logged in to submit a product');
 
-      images.forEach((image) => {
-        submitFormData.append('images', image);
-      });
+      const imageUrls: string[] = [];
 
-      const response = await fetch('/api/products/submit', {
-        method: 'POST',
-        body: submitFormData,
-      });
+      // Upload images
+      for (const image of images) {
+        const fileExt = image.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
 
-      const result = await response.json();
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, image);
 
-      if (result.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 2000);
-      } else {
-        setError(result.error || 'Failed to submit product');
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filePath);
+
+        imageUrls.push(publicUrl);
       }
+
+      // Create product record
+      const { error: dbError } = await supabase
+        .from('products')
+        .insert({
+          user_id: user.id,
+          product_name: formData.productName,
+          brand: formData.brand,
+          description: formData.description,
+          serial_number: formData.serialNumber,
+          images: imageUrls,
+          status: 'pending'
+        });
+
+      if (dbError) throw dbError;
+
+      router.push('/dashboard');
+      router.refresh();
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      console.error(err);
+      setError(err.message || 'Failed to submit product');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-3xl">Submit Product for Authentication</CardTitle>
-            <CardDescription className="text-base">
-              Fill in the details below to submit your product for verification
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {success && (
-              <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6">
-                Product submitted successfully! Redirecting to dashboard...
-              </div>
-            )}
+    <form onSubmit={handleSubmit} className="space-y-8">
+      <GlassCard className="p-8 md:p-10">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <Package className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Product Details</h2>
+            <p className="text-slate-500">Provide comprehensive information for authentication.</p>
+          </div>
+        </div>
 
-            {error && (
-              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg mb-6">
-                {error}
-              </div>
-            )}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            className="p-4 mb-6 rounded-lg bg-red-50 text-red-600 border border-red-100"
+          >
+            {error}
+          </motion.div>
+        )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Serial Number */}
-              <div className="space-y-2">
-                <Label htmlFor="serialNumber">Serial Number *</Label>
-                <Input
-                  id="serialNumber"
-                  name="serialNumber"
-                  type="text"
-                  placeholder="Enter product serial number"
-                  required
-                  value={formData.serialNumber}
-                  onChange={handleInputChange}
-                />
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label>Brand/Manufacturer</Label>
+              <Input
+                placeholder="e.g. Rolex, Nike, Apple"
+                className="h-12"
+                value={formData.brand}
+                onChange={e => setFormData({ ...formData, brand: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Product Name</Label>
+              <Input
+                placeholder="e.g. Submariner Date, Air Jordan 1"
+                className="h-12"
+                value={formData.productName}
+                onChange={e => setFormData({ ...formData, productName: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Serial Number / ID</Label>
+              <Input
+                placeholder="Unique Identifier found on product"
+                className="h-12 font-mono text-sm"
+                value={formData.serialNumber}
+                onChange={e => setFormData({ ...formData, serialNumber: e.target.value })}
+                required
+              />
+            </div>
+          </div>
 
-              {/* Brand */}
-              <div className="space-y-2">
-                <Label htmlFor="brand">Brand *</Label>
-                <Input
-                  id="brand"
-                  name="brand"
-                  type="text"
-                  placeholder="Enter brand name"
-                  required
-                  value={formData.brand}
-                  onChange={handleInputChange}
-                />
-              </div>
+          <div className="space-y-2">
+            <Label>Description & Details</Label>
+            <Textarea
+              placeholder="Describe the condition, provenance, and any specific details..."
+              className="min-h-[200px] p-4 leading-relaxed resize-none"
+              value={formData.description}
+              onChange={e => setFormData({ ...formData, description: e.target.value })}
+            />
+          </div>
+        </div>
+      </GlassCard>
 
-              {/* Product Name */}
-              <div className="space-y-2">
-                <Label htmlFor="productName">Product Name *</Label>
-                <Input
-                  id="productName"
-                  name="productName"
-                  type="text"
-                  placeholder="Enter product name"
-                  required
-                  value={formData.productName}
-                  onChange={handleInputChange}
-                />
-              </div>
+      <GlassCard className="p-8 md:p-10">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center">
+            <ImagePlus className="w-6 h-6 text-accent" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900">Visual Evidence</h2>
+            <p className="text-slate-500">Upload high-resolution images of the product and its packaging.</p>
+          </div>
+        </div>
 
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description">Description (Optional)</Label>
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={4}
-                  className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  placeholder="Add any additional details about the product"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              {/* Image Upload */}
-              <div className="space-y-2">
-                <Label htmlFor="images">Product Images *</Label>
-                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                  <input
-                    id="images"
-                    name="images"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    required={images.length === 0}
-                    className="hidden"
-                  />
-                  <label htmlFor="images" className="cursor-pointer">
-                    <Upload className="w-12 h-12 text-slate-400 mx-auto mb-2" />
-                    <p className="text-sm text-slate-600 mb-1">
-                      Click to upload images
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      PNG, JPG up to 10MB
-                    </p>
-                  </label>
-                </div>
-
-                {/* Image Previews */}
-                {imagePreviews.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg border-2 border-slate-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {images.length > 0 && (
-                  <p className="text-sm text-slate-600 mt-2">
-                    {images.length} file(s) selected
-                  </p>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full"
-                size="lg"
-                disabled={loading}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <AnimatePresence>
+            {imagePreviews.map((src, index) => (
+              <motion.div
+                key={src}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="relative aspect-square rounded-xl overflow-hidden group"
               >
-                {loading ? 'Submitting...' : 'Submit Product'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                <img src={src} alt="Preview" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="p-2 bg-white rounded-full text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+            <label className="aspect-square rounded-xl border-2 border-dashed border-slate-200 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-primary">
+              <Upload className="w-8 h-8" />
+              <span className="text-xs font-semibold uppercase">Upload</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleImageChange}
+              />
+            </label>
+          </AnimatePresence>
+        </div>
+      </GlassCard>
+
+      <div className="flex justify-end pt-4">
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full md:w-auto px-8 h-12 text-lg rounded-full shadow-xl shadow-primary/20 bg-primary hover:bg-primary-600"
+          disabled={loading}
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            'Submit Verification Request'
+          )}
+        </Button>
       </div>
-    </div>
+    </form>
   );
 }

@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Package, Calendar, CheckCircle2, Clock, XCircle, Shield } from 'lucide-react';
+import { GlassCard } from '@/components/ui/glass-card';
+import { MotionWrapper, StaggerContainer, FadeItem } from '@/components/MotionWrapper';
+import { Plus, Package, Calendar, CheckCircle2, Clock, XCircle, Shield, ArrowRight, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +26,7 @@ export default function DashboardPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -33,16 +36,11 @@ export default function DashboardPage() {
 
   const fetchProducts = async () => {
     if (!user) return;
-
     try {
       const response = await fetch('/api/products');
       const result = await response.json();
-
-      if (result.success) {
-        setProducts(result.data);
-      } else {
-        setError(result.error || 'Failed to fetch products');
-      }
+      if (result.success) setProducts(result.data);
+      else setError(result.error || 'Failed to fetch products');
     } catch (err: any) {
       setError(err.message || 'An error occurred');
     } finally {
@@ -52,144 +50,158 @@ export default function DashboardPage() {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { color: string; icon: any; label: string }> = {
-      pending: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock, label: 'Pending' },
-      under_review: { color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Shield, label: 'Under Review' },
-      authentic: { color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle2, label: 'Verified' },
-      not_authentic: { color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle, label: 'Not Authentic' },
-      certified: { color: 'bg-purple-100 text-purple-800 border-purple-200', icon: CheckCircle2, label: 'Certified' },
+      pending: { color: 'bg-yellow-50 text-yellow-700 border-yellow-200', icon: Clock, label: 'Pending Review' },
+      under_review: { color: 'bg-blue-50 text-blue-700 border-blue-200', icon: Shield, label: 'Under Review' },
+      authentic: { color: 'bg-green-50 text-green-700 border-green-200', icon: CheckCircle2, label: 'Verified Authentic' },
+      not_authentic: { color: 'bg-red-50 text-red-700 border-red-200', icon: XCircle, label: 'Failed Verification' },
     };
-    const badge = badges[status] || { color: 'bg-gray-100 text-gray-800 border-gray-200', icon: Clock, label: status };
+    const badge = badges[status] || { color: 'bg-slate-50 text-slate-700 border-slate-200', icon: Clock, label: status };
     const Icon = badge.icon;
     return (
-      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${badge.color}`}>
-        <Icon className="w-3 h-3" />
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${badge.color}`}>
+        <Icon className="w-3.5 h-3.5" />
         {badge.label}
       </span>
     );
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  const filteredProducts = products.filter(p =>
+    p.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.serial_number.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
-        <div className="text-xl text-slate-600">Loading...</div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <p className="text-slate-500 font-medium">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Authentication Required</CardTitle>
-            <CardDescription>Please log in to view your dashboard.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/login">
-              <Button className="w-full">Sign In</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  if (!user) return null; // Middleware will handle redirect
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <div className="container mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <Card className="mb-8 border-2">
-          <CardHeader>
-            <CardTitle className="text-2xl">Welcome back!</CardTitle>
-            <CardDescription className="text-base">{user.email}</CardDescription>
-          </CardHeader>
-        </Card>
-
-        {/* Submit New Product Card */}
-        <Link href="/submit">
-          <Card className="mb-8 border-2 border-primary/20 hover:border-primary/50 transition-all cursor-pointer bg-gradient-to-br from-primary/5 to-primary/10">
-            <CardHeader className="text-center py-8">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Plus className="w-8 h-8 text-primary" />
+    <div className="min-h-screen bg-slate-50 pb-20">
+      <div className="bg-white border-b border-slate-200 mb-8 pt-24 pb-8">
+        <div className="container mx-auto px-6">
+          <MotionWrapper>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <h1 className="text-3xl font-heading font-bold text-slate-900 mb-1">
+                  Dashboard
+                </h1>
+                <p className="text-slate-500">
+                  Manage and track your product authentications.
+                </p>
               </div>
-              <CardTitle className="text-2xl">Submit New Product</CardTitle>
-              <CardDescription className="text-base">
-                Submit a product for authentication verification
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
+              <Link href="/submit">
+                <Button size="lg" className="rounded-full shadow-lg shadow-primary/20 bg-primary hover:bg-primary-600">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Submit New Product
+                </Button>
+              </Link>
+            </div>
+          </MotionWrapper>
+        </div>
+      </div>
 
-        {/* Error Message */}
+      <div className="container mx-auto px-6">
         {error && (
-          <Card className="mb-8 border-destructive">
-            <CardContent className="pt-6">
-              <p className="text-destructive">{error}</p>
-            </CardContent>
-          </Card>
+          <div className="p-4 rounded-lg bg-red-50 text-red-600 mb-6 border border-red-100">
+            {error}
+          </div>
         )}
 
-        {/* Products Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Your Products</h2>
-          <p className="text-slate-600">Track the authentication status of your submitted products</p>
+        <div className="flex flex-col md:flex-row gap-6 mb-8 items-center">
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input
+              placeholder="Search products..."
+              className="pl-10 h-10 bg-white border-slate-200 rounded-lg"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 text-sm text-slate-500">
+            {/* Quick stats could go here */}
+            <strong>{products.length}</strong> Total Products
+          </div>
         </div>
 
-        {products.length === 0 ? (
-          <Card className="border-2 border-dashed">
-            <CardHeader className="text-center py-12">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Package className="w-8 h-8 text-slate-400" />
+        {filteredProducts.length === 0 ? (
+          <MotionWrapper delay={0.2}>
+            {searchTerm ? (
+              <div className="text-center py-20">
+                <p className="text-slate-500">No products found matching "{searchTerm}"</p>
               </div>
-              <CardTitle className="text-xl text-slate-600">No products yet</CardTitle>
-              <CardDescription className="text-base">
-                Submit your first product to get started with authentication
-              </CardDescription>
-            </CardHeader>
-          </Card>
+            ) : (
+              <div className="text-center py-20 max-w-md mx-auto">
+                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Package className="w-10 h-10 text-slate-400" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">No products yet</h3>
+                <p className="text-slate-500 mb-8">
+                  Submit your first product for verification to get started with the blockchain ledger.
+                </p>
+                <Link href="/submit">
+                  <Button variant="outline" className="rounded-full">
+                    Submit First Product
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </MotionWrapper>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => (
-              <Card key={product.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  {product.images && product.images.length > 0 && (
-                    <div className="w-full h-48 bg-slate-100 rounded-lg mb-4 overflow-hidden">
+          <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProducts.map((product) => (
+              <FadeItem key={product.id}>
+                <GlassCard className="h-full flex flex-col group overflow-hidden border-slate-200/60">
+                  <div className="relative h-48 bg-slate-100 overflow-hidden">
+                    {product.images && product.images.length > 0 ? (
                       <img
                         src={product.images[0]}
                         alt={product.product_name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                        <Package className="w-12 h-12 text-slate-300" />
+                      </div>
+                    )}
+                    <div className="absolute top-3 right-3">
+                      {getStatusBadge(product.status)}
                     </div>
-                  )}
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <CardTitle className="text-lg">{product.product_name}</CardTitle>
-                    {getStatusBadge(product.status)}
                   </div>
-                  <CardDescription className="space-y-1">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Package className="w-4 h-4" />
-                      <span className="font-medium">{product.brand}</span>
+
+                  <div className="p-5 flex flex-col flex-grow">
+                    <div className="mb-4">
+                      <div className="text-xs text-primary font-bold uppercase tracking-wider mb-1">
+                        {product.brand}
+                      </div>
+                      <h3 className="font-bold text-lg text-slate-900 group-hover:text-primary transition-colors">
+                        {product.product_name}
+                      </h3>
+                      <div className="text-xs font-mono text-slate-400 mt-1 truncate">
+                        #{product.serial_number}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      SN: {product.serial_number}
+
+                    <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {new Date(product.submitted_at).toLocaleDateString()}
+                      </div>
+                      <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all duration-300 text-primary" />
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
-                      <Calendar className="w-3 h-3" />
-                      {formatDate(product.submitted_at)}
-                    </div>
-                  </CardDescription>
-                </CardHeader>
-              </Card>
+                  </div>
+                </GlassCard>
+              </FadeItem>
             ))}
-          </div>
+          </StaggerContainer>
         )}
       </div>
     </div>

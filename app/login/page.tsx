@@ -1,35 +1,27 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Shield, ArrowRight, Lock } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-// Force dynamic rendering to fix Vercel deployment (useSearchParams requires this)
 export const dynamic = 'force-dynamic';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signIn, user, loading: authLoading } = useAuth();
+  const { signIn, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const redirect = searchParams.get('redirect') || '/dashboard';
-
-  // If already logged in, redirect to dashboard
-  useEffect(() => {
-    if (!authLoading && user) {
-      router.push(redirect);
-      router.refresh();
-    }
-  }, [user, authLoading, router, redirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,86 +35,118 @@ function LoginForm() {
       setLoading(false);
     } else {
       router.push(redirect);
-      router.refresh();
+      router.refresh(); // Ensure auth state updates
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center py-12 px-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-3xl font-bold text-center">Welcome back</CardTitle>
-          <CardDescription className="text-center text-base">
-            Sign in to your account to continue
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
+    <div className="w-full max-w-md mx-auto space-y-8">
+      <div className="space-y-2 text-center lg:text-left">
+        <h1 className="text-3xl font-heading font-bold text-slate-900">Welcome back</h1>
+        <p className="text-slate-500">Enter your credentials to access your dashboard.</p>
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="you@example.com"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 rounded-lg bg-red-50 border border-red-100 text-red-600 text-sm"
+          >
+            {error}
+          </motion.div>
+        )}
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <div className="text-sm text-center text-muted-foreground">
-            Don't have an account?{' '}
-            <Link href="/register" className="text-primary hover:underline font-medium">
-              Create account
-            </Link>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email address</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="name@company.com"
+              className="h-12 bg-slate-50 border-slate-200 focus:bg-white transition-all"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
-        </CardFooter>
-      </Card>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link href="#" className="text-xs font-medium text-primary hover:underline">
+                Forgot password?
+              </Link>
+            </div>
+            <Input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              className="h-12 bg-slate-50 border-slate-200 focus:bg-white transition-all"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          className="w-full h-12 rounded-lg bg-primary hover:bg-primary-600 text-lg font-medium shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5"
+          disabled={loading || authLoading}
+        >
+          {loading ? 'Signing in...' : 'Sign in to Account'}
+        </Button>
+      </form>
+
+      <div className="text-center text-sm">
+        <span className="text-slate-500">Don't have an account? </span>
+        <Link href="/register" className="font-medium text-primary hover:underline">
+          Get started
+        </Link>
+      </div>
     </div>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
-        <div className="text-xl text-slate-600">Loading...</div>
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-white">
+      {/* Visual Content - Hidden on mobile */}
+      <div className="hidden lg:flex flex-col justify-between p-12 bg-slate-900 relative overflow-hidden text-white">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-900 via-slate-900 to-slate-900" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary-600/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+
+        <div className="relative z-10">
+          <Link href="/" className="flex items-center gap-2 mb-12">
+            <Shield className="w-8 h-8 text-white" />
+            <span className="text-2xl font-heading font-bold">A-Capp</span>
+          </Link>
+        </div>
+
+        <div className="relative z-10 space-y-8 max-w-lg">
+          <blockquote className="text-2xl font-light leading-relaxed">
+            "The security and transparency provided by A-Capp has completely transformed our supply chain integrity."
+          </blockquote>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-white to-slate-300" />
+            <div>
+              <div className="font-medium">Alex Chen</div>
+              <div className="text-slate-400 text-sm">CTO, Luxury Goods Inc.</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative z-10 text-sm text-slate-500">
+          © 2024 A-Capp. Secured by Blockchain.
+        </div>
       </div>
-    }>
-      <LoginForm />
-    </Suspense>
+
+      {/* Form Section */}
+      <div className="flex items-center justify-center p-6 lg:p-12">
+        <Suspense fallback={<div>Loading...</div>}>
+          <LoginForm />
+        </Suspense>
+      </div>
+    </div>
   );
 }
