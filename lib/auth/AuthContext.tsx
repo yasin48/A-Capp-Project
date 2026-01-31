@@ -90,17 +90,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-
+      await supabase.auth.signOut();
       // Force a hard redirect to clear all state
       window.location.href = '/';
-
-      if (error) {
-        return { error };
-      }
-
       return { error: null };
     } catch (error: any) {
+      console.error('Error signing out:', error);
+      // Still redirect even if error to prevent stuck state
+      window.location.href = '/';
       return { error: { message: error.message || 'Sign out failed' } };
     }
   };
