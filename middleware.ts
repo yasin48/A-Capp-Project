@@ -56,13 +56,17 @@ export async function middleware(req: NextRequest) {
   const publicRoutes = ['/login', '/register', '/verify'];
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith('/verify'));
 
+  // Debug log
+  console.log('Middleware called:', { pathname, isPublicRoute, hasSession: !!session });
+
   // Home page - redirect authenticated users to dashboard, allow unauthenticated
   if (pathname === '/') {
-    if (session) {
-      const redirectUrl = req.nextUrl.clone();
-      redirectUrl.pathname = '/dashboard';
-      return NextResponse.redirect(redirectUrl);
-    }
+    // TEMPORARILY DISABLED: Debugging stuck redirect
+    // if (session) {
+    //   const redirectUrl = req.nextUrl.clone();
+    //   redirectUrl.pathname = '/dashboard';
+    //   return NextResponse.redirect(redirectUrl);
+    // }
     return response; // Allow unauthenticated users to see landing page
   }
 
