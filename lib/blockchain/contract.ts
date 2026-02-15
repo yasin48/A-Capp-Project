@@ -32,12 +32,12 @@ export class ProductAuthContract {
   async storeHash(hash: string, productId: string) {
     try {
       // Convert hex string to bytes32
-      const hashBytes32 = hash.length === 64 
-        ? '0x' + hash 
+      const hashBytes32 = hash.length === 64
+        ? '0x' + hash
         : ethers.keccak256(ethers.toUtf8Bytes(hash));
       const tx = await this.contract.storeHash(hashBytes32, productId);
       const receipt = await tx.wait();
-      
+
       return {
         success: true,
         txHash: receipt.hash,
@@ -61,11 +61,11 @@ export class ProductAuthContract {
   async verifyHash(hash: string) {
     try {
       // Convert hex string to bytes32
-      const hashBytes32 = hash.length === 64 
-        ? '0x' + hash 
+      const hashBytes32 = hash.length === 64
+        ? '0x' + hash
         : ethers.keccak256(ethers.toUtf8Bytes(hash));
       const result = await this.contract.verifyHash(hashBytes32);
-      
+
       return {
         exists: result.exists,
         productId: result.productId,
@@ -110,11 +110,11 @@ export class ProductAuthContract {
   async getRecord(hash: string) {
     try {
       // Convert hex string to bytes32
-      const hashBytes32 = hash.length === 64 
-        ? '0x' + hash 
+      const hashBytes32 = hash.length === 64
+        ? '0x' + hash
         : ethers.keccak256(ethers.toUtf8Bytes(hash));
       const result = await this.contract.getRecord(hashBytes32);
-      
+
       return {
         productId: result.productId,
         timestamp: result.timestamp.toString(),
@@ -137,8 +137,8 @@ let contractInstance: ProductAuthContract | null = null;
 export function getContractInstance(): ProductAuthContract {
   if (!contractInstance) {
     const config: ContractConfig = {
-      rpcUrl: process.env.RPC_URL || '',
-      contractAddress: process.env.CONTRACT_ADDRESS || '',
+      rpcUrl: process.env.NEXT_PUBLIC_POLYGON_RPC_URL || process.env.RPC_URL || '',
+      contractAddress: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS || '',
       privateKey: process.env.PRIVATE_KEY || '',
     };
 

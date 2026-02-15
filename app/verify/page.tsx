@@ -5,7 +5,7 @@ import { GlassCard } from '@/components/ui/glass-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MotionWrapper } from '@/components/MotionWrapper';
-import { ShieldCheck, Search, CheckCircle2, XCircle, Box, AlertTriangle, ArrowRight, Copy } from 'lucide-react';
+import { ShieldCheck, Search, CheckCircle2, XCircle, Box, AlertTriangle, ArrowRight, Copy, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const dynamic = 'force-dynamic';
@@ -90,8 +90,8 @@ export default function VerifyPage() {
               className="mt-12"
             >
               <GlassCard className={`overflow-hidden border-2 ${result.verified
-                  ? 'border-green-500/20 shadow-green-500/10'
-                  : 'border-red-500/20 shadow-red-500/10'
+                ? 'border-green-500/20 shadow-green-500/10'
+                : 'border-red-500/20 shadow-red-500/10'
                 }`}>
                 <div className={`h-2 w-full ${result.verified ? 'bg-green-500' : 'bg-red-500'}`} />
                 <div className="p-8 md:p-10 text-center">
@@ -115,9 +115,19 @@ export default function VerifyPage() {
                         <div className="md:col-span-2 pt-4 border-t border-slate-200 mt-2">
                           <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Blockchain Verification ID</div>
                           <div className="font-mono text-xs text-slate-500 break-all flex items-center gap-2">
-                            {result.certificate?.signature || "0x7f83b1657ff1...9a2b"}
+                            {result.blockchainRecord?.txHash || result.certificate?.signature || "0x7f83b1657ff1...9a2b"}
                             <Copy className="w-3 h-3 cursor-pointer hover:text-primary" />
                           </div>
+                          {result.blockchainRecord?.txHash && (
+                            <a
+                              href={`https://amoy.polygonscan.com/tx/${result.blockchainRecord.txHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 mt-2 text-sm text-primary hover:underline"
+                            >
+                              View on PolygonScan <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
                         </div>
                       </div>
                     </>

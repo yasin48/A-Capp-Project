@@ -30,7 +30,17 @@ export async function GET(request: NextRequest) {
       .from('products')
       .select('*')
       .in('status', ['pending', 'submitted', 'under_review'])
-      .order('submitted_at', { ascending: true });
+      .order('created_at', { ascending: true });
+
+    console.log('[Pending Products] Query result - Count:', data?.length);
+    if (data && data.length > 0) {
+      console.log('[Pending Products] Sample products:', data.map(p => ({
+        id: p.id,
+        serial: p.serial_number,
+        status: p.status,
+        brand: p.brand
+      })));
+    }
 
     if (error) {
       console.error('Error fetching pending products:', error);

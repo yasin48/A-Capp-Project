@@ -94,6 +94,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Store hash on blockchain
+    let blockchainResult: { success: boolean; txHash?: string; blockNumber?: number; error?: string } = { success: false };
+    try {
+      const { storeOnBlockchain } = await import('@/lib/blockchain/service');
+      blockchainResult = await storeOnBlockchain(product.id, hash);
+
+      if (blockchainResult.success && blockchainResult.txHash) {
+        // Save blockchain record
+        await supabase.from('blockchain_records').insert({
+          id: uuidv4(),
+          certificate_id: certificateId,
+          product_id: product.id,
+          hash,
+          tx_hash: blockchainResult.txHash,
+          block_number: blockchainResult.blockNumber || 0,
+          network: 'polygon-amoy',
+          contract_address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '',
+        });
+
+        // Update certificate with blockchain info
+        await supabase.from('certificates')
+          .update({
+            blockchain_tx_hash: blockchainResult.txHash,
+            blockchain_block_number: blockchainResult.blockNumber,
+          })
+          .eq('id', certificateId);
+      }
+    } catch (blockchainError: any) {
+      console.error('Blockchain storage failed (non-blocking):', blockchainError.message);
+      // Continue even if blockchain storage fails - certificate is still valid
+    }
+
     // Update product status to certified
     const { error: updateError } = await supabase
       .from('products')
@@ -119,6 +151,11 @@ export async function POST(request: NextRequest) {
         hash,
         certificateData,
         jsonData,
+        blockchain: blockchainResult.success ? {
+          txHash: blockchainResult.txHash,
+          blockNumber: blockchainResult.blockNumber,
+          network: 'polygon-amoy',
+        } : null,
       },
     });
   } catch (error: any) {

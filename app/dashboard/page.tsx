@@ -53,6 +53,7 @@ export default function DashboardPage() {
       pending: { color: 'bg-yellow-50 text-yellow-700 border-yellow-200', icon: Clock, label: 'Pending Review' },
       under_review: { color: 'bg-blue-50 text-blue-700 border-blue-200', icon: Shield, label: 'Under Review' },
       authentic: { color: 'bg-green-50 text-green-700 border-green-200', icon: CheckCircle2, label: 'Verified Authentic' },
+      certified: { color: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: CheckCircle2, label: 'Blockchain Certified' },
       not_authentic: { color: 'bg-red-50 text-red-700 border-red-200', icon: XCircle, label: 'Failed Verification' },
     };
     const badge = badges[status] || { color: 'bg-slate-50 text-slate-700 border-slate-200', icon: Clock, label: status };

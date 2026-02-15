@@ -24,8 +24,13 @@ const config: HardhatUserConfig = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
     mumbai: {
-      url: process.env.RPC_URL || "",
+      url: process.env.NEXT_PUBLIC_POLYGON_RPC_URL || process.env.RPC_URL || "",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+    },
+    amoy: {
+      url: process.env.NEXT_PUBLIC_POLYGON_RPC_URL || "https://rpc-amoy.polygon.technology",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 80002,
     },
     polygon: {
       url: process.env.RPC_URL || "",

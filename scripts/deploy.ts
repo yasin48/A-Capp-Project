@@ -1,19 +1,31 @@
-import { ethers } from "hardhat";
+import hre from "hardhat";
+const { ethers } = hre;
 
 async function main() {
-  const [deployer] = await ethers.getSigners();
+  console.log("Deploying ProductAuthentication contract...");
 
-  console.log("Deploying contracts with the account:", deployer.address);
-  console.log("Account balance:", (await deployer.provider.getBalance(deployer.address)).toString());
+  const signers = await hre.ethers.getSigners();
+  if (signers.length === 0) {
+    throw new Error("No signers available. Check your PRIVATE_KEY in .env");
+  }
+  const deployer = signers[0];
 
-  const ProductAuthentication = await ethers.getContractFactory("ProductAuthentication");
-  const productAuth = await ProductAuthentication.deploy();
+  console.log("Deploying with account:", deployer.address);
+  const balance = await hre.ethers.provider.getBalance(deployer.address);
+  console.log("Account balance:", hre.ethers.formatEther(balance), "MATIC");
 
-  await productAuth.waitForDeployment();
+  const ProductAuthentication = await hre.ethers.getContractFactory("ProductAuthentication");
+  const contract = await ProductAuthentication.deploy();
 
-  const address = await productAuth.getAddress();
-  console.log("ProductAuthentication deployed to:", address);
-  console.log("\nPlease update CONTRACT_ADDRESS in your .env file with:", address);
+  // Wait for deployment to complete
+  await contract.waitForDeployment();
+
+  // Get the deployed contract address
+  const contractAddress = await contract.getAddress();
+
+  console.log("\n✅ ProductAuthentication deployed to:", contractAddress);
+  console.log("\nAdd this to your .env.local:");
+  console.log(`NEXT_PUBLIC_CONTRACT_ADDRESS=${contractAddress}`);
 }
 
 main()

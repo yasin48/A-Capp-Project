@@ -99,15 +99,25 @@ export default function AuthenticatorPage() {
       <div className="bg-white border-b border-slate-200 mb-8 pt-24 pb-8 sticky top-0 z-30 shadow-sm">
         <div className="container mx-auto px-6">
           <MotionWrapper>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-primary" />
+                  </div>
+                  <h1 className="text-2xl font-bold text-slate-900">Authenticator Workspace</h1>
+                </div>
+                <p className="text-slate-500">
+                  {products.length} product{products.length !== 1 && 's'} awaiting verification
+                </p>
               </div>
-              <h1 className="text-2xl font-bold text-slate-900">Authenticator Workspace</h1>
+              <Link href="/authenticator/history">
+                <Button variant="outline" className="gap-2">
+                  <FileText className="w-4 h-4" />
+                  History
+                </Button>
+              </Link>
             </div>
-            <p className="text-slate-500">
-              {products.length} product{products.length !== 1 && 's'} awaiting verification
-            </p>
           </MotionWrapper>
         </div>
       </div>
