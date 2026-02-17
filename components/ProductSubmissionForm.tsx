@@ -70,7 +70,8 @@ export default function ProductSubmissionForm() {
         imageUrls.push(publicUrl);
       }
 
-      // Create product record
+      // Create product record - MUST include all timestamp fields
+      const now = new Date().toISOString();
       const { error: dbError } = await supabase
         .from('products')
         .insert({
@@ -80,13 +81,19 @@ export default function ProductSubmissionForm() {
           description: formData.description,
           serial_number: formData.serialNumber,
           images: imageUrls,
-          status: 'pending'
+          status: 'pending',
+          created_at: now,
+          submitted_at: now,
+          updated_at: now,
         });
 
       if (dbError) throw dbError;
 
-      router.push('/dashboard');
+      console.log('✅ Product submitted with timestamps:', { serial: formData.serialNumber, created_at: now });
+
+      // Force cache invalidation before navigating
       router.refresh();
+      router.push('/dashboard');
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to submit product');

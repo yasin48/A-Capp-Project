@@ -9,7 +9,7 @@ import { MotionWrapper, StaggerContainer, FadeItem } from '@/components/MotionWr
 import { Plus, Package, Calendar, CheckCircle2, Clock, XCircle, Shield, ArrowRight, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-export const dynamic = 'force-dynamic';
+
 
 interface Product {
   id: string;
@@ -34,10 +34,19 @@ export default function DashboardPage() {
     }
   }, [user, authLoading]);
 
+  // Refetch when window regains focus (handles navigation back from submit)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) fetchProducts();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [user]);
+
   const fetchProducts = async () => {
     if (!user) return;
     try {
-      const response = await fetch('/api/products');
+      const response = await fetch('/api/products', { cache: 'no-store' });
       const result = await response.json();
       if (result.success) setProducts(result.data);
       else setError(result.error || 'Failed to fetch products');

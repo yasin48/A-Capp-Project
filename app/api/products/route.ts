@@ -5,13 +5,11 @@ import { getAuthenticatedUser } from '@/lib/auth/getUser';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[API Products] Authenticating user...');
-    // Get authenticated user
     const { user, error: authError } = await getAuthenticatedUser(request);
-    console.log('[API Products] Auth result - User ID:', user?.id, 'Email:', user?.email, 'Error:', authError);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -23,33 +21,31 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
+    // NOTE: Do NOT use .order() - Supabase silently drops rows with NULL created_at
     let query = supabase
       .from('products')
       .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .eq('user_id', user.id);
 
     if (status) {
       query = query.eq('status', status);
     }
 
-    const { data, error, status: httpStatus, statusText } = await query;
+    const { data: rawData, error } = await query;
 
-    console.log('[API Products] Query result - Count:', data?.length, 'User ID filter:', user.id, 'HTTP:', httpStatus, statusText);
-    if (error) {
-      console.error('[API Products] Supabase error:', { code: error.code, message: error.message, details: error.details, hint: error.hint });
-    }
-    if (data && data.length > 0) {
-      console.log('[API Products] First product:', JSON.stringify({ id: data[0].id, status: data[0].status, product_name: data[0].product_name }));
-    }
-    if (data && data.length === 0) {
-      // Debug: Check if there are any products at all
-      const { data: allProducts, error: debugError } = await supabase
-        .from('products')
-        .select('id, user_id, status')
-        .limit(5);
-      console.log('[API Products] DEBUG - All products sample:', JSON.stringify(allProducts), 'Error:', debugError?.message);
-    }
+    // Sort in JavaScript: newest first, NULLs at top
+    const data = (rawData || []).sort((a, b) => {
+      if (!a.created_at && !b.created_at) return 0;
+      if (!a.created_at) return -1;
+      if (!b.created_at) return 1;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+
+    console.log('═══════ FETCHING PRODUCTS ═════════');
+    console.log('User:', user.id, user.email);
+    console.log('Result count:', data.length);
+    console.log('Products:', data.map(p => ({ serial: p.serial_number, status: p.status, created: p.created_at })));
+    console.log('═══════════════════════════════════');
 
     if (error) {
       return NextResponse.json(
@@ -60,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data: data,
     });
   } catch (error: any) {
     console.error('Error fetching products:', error);

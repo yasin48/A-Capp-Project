@@ -46,31 +46,64 @@ export async function POST(request: NextRequest) {
     }
 
     const productId = uuidv4();
+    const now = new Date().toISOString();
 
-    // Store in database via Supabase
+    const insertPayload = {
+      id: productId,
+      user_id: user.id,
+      serial_number: serialNumber,
+      brand,
+      product_name: productName,
+      description: description || null,
+      images: imageUrls,
+      status: 'pending',
+      created_at: now,
+      submitted_at: now,
+      updated_at: now,
+    };
+
     const { data, error } = await supabase
       .from('products')
-      .insert({
-        id: productId,
-        user_id: user.id,
-        serial_number: serialNumber,
-        brand,
-        product_name: productName,
-        description: description || null,
-        images: imageUrls,
-        status: 'pending',
-        submitted_at: new Date().toISOString(),
-      })
-      .select('id, status, submitted_at')
+      .insert(insertPayload)
+      .select()
       .single();
 
+    console.log('═══════════════════════════════════');
+    console.log('═══════ PRODUCT SUBMISSION ════════');
+    console.log('═══════════════════════════════════');
     if (error) {
-      console.error('Error inserting product:', error);
+      console.log('❌ INSERT FAILED');
+      console.log('Error code:', error.code);
+      console.log('Error message:', error.message);
+      console.log('Error details:', error.details);
+      console.log('Error hint:', error.hint);
+      console.log('═══════════════════════════════════');
       return NextResponse.json(
         { success: false, error: 'Failed to save product' },
         { status: 500 }
       );
     }
+
+    console.log('✅ INSERT SUCCEEDED');
+    console.log('Product ID:', data?.id);
+    console.log('User ID:', data?.user_id);
+    console.log('Serial:', data?.serial_number);
+    console.log('Brand:', data?.brand);
+    console.log('Status:', data?.status);
+    console.log('Created at:', data?.created_at);
+    console.log('Submitted at:', data?.submitted_at);
+    console.log('Updated at:', data?.updated_at);
+
+    // CROSS-CHECK: Immediately query back to confirm it's readable
+    const { data: verify, error: verifyError } = await supabase
+      .from('products')
+      .select('id, status, user_id, created_at')
+      .eq('id', productId)
+      .single();
+
+    console.log('🔍 CROSS-CHECK read-back:', verify ? `Found! status=${verify.status}, user=${verify.user_id}, created=${verify.created_at}` : 'NOT FOUND!');
+    if (verifyError) console.log('🔍 CROSS-CHECK error:', verifyError.message);
+    console.log('═══════════════════════════════════');
 
     return NextResponse.json({
       success: true,

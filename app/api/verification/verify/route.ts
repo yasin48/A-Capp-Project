@@ -84,12 +84,15 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    console.log('Attempting to update product:', productId, 'with data:', JSON.stringify(updateData, null, 2));
+    console.log('Attempting to update product:', productId, 'to status:', newStatus);
 
-    const { error: updateError } = await supabase
+    const { data: updateResult, error: updateError } = await supabase
       .from('products')
       .update(updateData)
-      .eq('id', productId);
+      .eq('id', productId)
+      .select();
+
+    console.log('Product update result:', { updated: updateResult?.length, error: updateError?.message });
 
     if (updateError) {
       console.error('Product update error:', {
@@ -108,94 +111,110 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify the update actually took effect (RLS may silently block)
+    if (!updateResult || updateResult.length === 0) {
+      console.warn('Product update returned 0 rows - RLS may be blocking. Checking current status...');
+      const { data: checkProduct } = await supabase
+        .from('products')
+        .select('id, status')
+        .eq('id', productId)
+        .single();
+      console.log('Current product status after update attempt:', checkProduct?.status);
+
+      if (checkProduct && checkProduct.status !== newStatus) {
+        console.error('CONFIRMED: Update was blocked by RLS. Product status is still:', checkProduct.status);
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Product update blocked by database policy. Contact admin.',
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     // If product is verified as authentic, auto-create certificate and store on blockchain
     let certificateResult: any = null;
     let blockchainResult: any = null;
 
     if (decision === 'authentic') {
+      // Step 1: Generate hash
+      const { generateHash } = await import('@/lib/blockchain/hash');
+
+      const certificateData = {
+        productId: productId,
+        authenticationDecision: 'authentic',
+        timestamp: new Date().toISOString(),
+        notes: notes || 'Product verified as authentic',
+      };
+
+      const jsonData = JSON.stringify(certificateData, null, 2);
+      const hash = generateHash(jsonData);
+      const certificateId = uuidv4();
+
+      console.log('🔐 Generated hash:', hash);
+
+      // Step 2: Try to create certificate (non-blocking)
       try {
-        // Create certificate
-        const { generateHash } = await import('@/lib/blockchain/hash');
-        const { format } = await import('date-fns');
-
-        const certificateData = {
-          productId: productId,
-          authenticationDecision: 'authentic',
-          timestamp: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
-          reason: notes || 'Product verified as authentic',
-          notes: notes,
-        };
-
-        const jsonData = JSON.stringify(certificateData, null, 2);
-        const hash = generateHash(jsonData);
-        const certificateId = uuidv4();
-
-        // Insert certificate
         const { error: certError } = await supabase.from('certificates').insert({
           id: certificateId,
           product_id: productId,
-          verification_id: verificationId,
-          product_data: { productId },
-          authentication_decision: 'authentic',
-          timestamp: certificateData.timestamp,
-          reason: certificateData.reason,
-          notes: notes || null,
-          json_data: jsonData,
           hash,
         });
 
         if (certError) {
-          console.error('Certificate creation error (non-blocking):', certError.message);
+          console.error('⚠️ Certificate insert failed:', certError.message, certError.hint || '');
         } else {
           certificateResult = { certificateId, hash };
-
-          // Store on blockchain
-          try {
-            const { storeOnBlockchain } = await import('@/lib/blockchain/service');
-            const bcResult = await storeOnBlockchain(productId, hash);
-
-            if (bcResult.success && bcResult.txHash) {
-              blockchainResult = {
-                txHash: bcResult.txHash,
-                blockNumber: bcResult.blockNumber,
-                network: 'polygon-amoy',
-              };
-
-              // Save blockchain record
-              await supabase.from('blockchain_records').insert({
-                id: uuidv4(),
-                certificate_id: certificateId,
-                product_id: productId,
-                hash,
-                tx_hash: bcResult.txHash,
-                block_number: bcResult.blockNumber || 0,
-                network: 'polygon-amoy',
-                contract_address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '',
-              });
-
-              // Update certificate with blockchain info
-              await supabase.from('certificates')
-                .update({
-                  blockchain_tx_hash: bcResult.txHash,
-                  blockchain_block_number: bcResult.blockNumber,
-                })
-                .eq('id', certificateId);
-
-              // Update product status to certified
-              await supabase.from('products')
-                .update({ status: 'certified' })
-                .eq('id', productId);
-
-              console.log('✅ Blockchain storage successful:', bcResult.txHash);
-            } else {
-              console.error('Blockchain storage failed:', bcResult.error);
-            }
-          } catch (bcError: any) {
-            console.error('Blockchain error (non-blocking):', bcError.message);
-          }
+          console.log('✅ Certificate created:', certificateId);
         }
-      } catch (certError: any) {
-        console.error('Certificate/blockchain error (non-blocking):', certError.message);
+      } catch (certErr: any) {
+        console.error('⚠️ Certificate error:', certErr.message);
+      }
+
+      // Step 3: Store on blockchain (always attempt, independent of certificate)
+      try {
+        console.log('⛓️ Attempting blockchain storage...');
+        const { storeOnBlockchain } = await import('@/lib/blockchain/service');
+        const bcResult = await storeOnBlockchain(productId, hash);
+
+        console.log('⛓️ Blockchain result:', JSON.stringify(bcResult));
+
+        if (bcResult.success && bcResult.txHash) {
+          blockchainResult = {
+            txHash: bcResult.txHash,
+            blockNumber: bcResult.blockNumber,
+            network: 'polygon-amoy',
+          };
+
+          // Save blockchain record
+          const { error: bcDbError } = await supabase.from('blockchain_records').insert({
+            id: uuidv4(),
+            product_id: productId,
+            hash,
+            tx_hash: bcResult.txHash,
+            block_number: bcResult.blockNumber || 0,
+            network: 'polygon-amoy',
+            contract_address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '',
+          });
+
+          if (bcDbError) {
+            console.error('⚠️ blockchain_records insert failed:', bcDbError.message, bcDbError.hint || '');
+          } else {
+            console.log('✅ Blockchain record saved to DB');
+          }
+
+          // Update product status to certified
+          await supabase.from('products')
+            .update({ status: 'certified' })
+            .eq('id', productId);
+
+          console.log('✅ Blockchain storage successful:', bcResult.txHash);
+        } else {
+          console.error('❌ Blockchain storage failed:', bcResult.error || 'Unknown error');
+        }
+      } catch (bcError: any) {
+        console.error('❌ Blockchain error (non-blocking):', bcError.message);
       }
     }
 

@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Package, Calendar, User, CheckCircle2, XCircle, Shield, ArrowRight, AlertCircle, FileText } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+
 
 interface Product {
   id: string;

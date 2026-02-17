@@ -8,7 +8,7 @@ import { MotionWrapper } from '@/components/MotionWrapper';
 import { ShieldCheck, Search, CheckCircle2, XCircle, Box, AlertTriangle, ArrowRight, Copy, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export const dynamic = 'force-dynamic';
+
 
 export default function VerifyPage() {
   const [query, setQuery] = useState('');
@@ -118,18 +118,51 @@ export default function VerifyPage() {
                             {result.blockchainRecord?.txHash || result.certificate?.signature || "0x7f83b1657ff1...9a2b"}
                             <Copy className="w-3 h-3 cursor-pointer hover:text-primary" />
                           </div>
-                          {result.blockchainRecord?.txHash && (
+                        </div>
+
+                      </div>
+
+
+                      {result.blockchainRecord && (
+                        <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200 text-left">
+                          <h3 className="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                            🔗 Blockchain Proof
+                          </h3>
+                          <div className="space-y-4 text-sm whitespace-normal break-all">
+                            <div>
+                              <span className="text-gray-600 block text-xs uppercase tracking-wide mb-1">Transaction Hash</span>
+                              <p className="font-mono text-xs text-indigo-600 bg-white/50 p-2 rounded border border-indigo-100">
+                                {result.blockchainRecord.txHash}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-gray-600 block text-xs uppercase tracking-wide mb-1">Block Number</span>
+                              <span className="font-mono font-semibold text-indigo-900 text-base">
+                                {result.blockchainRecord.blockNumber}
+                              </span>
+                            </div>
+                            {result.blockchainRecord.timestamp && (
+                              <div>
+                                <span className="text-gray-600 block text-xs uppercase tracking-wide mb-1">Timestamp</span>
+                                <span className="font-mono text-indigo-900 text-sm">
+                                  {new Date(result.blockchainRecord.timestamp).toLocaleString()}
+                                </span>
+                              </div>
+                            )}
+
                             <a
                               href={`https://amoy.polygonscan.com/tx/${result.blockchainRecord.txHash}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 mt-2 text-sm text-primary hover:underline"
+                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-medium shadow-sm hover:shadow-md"
                             >
-                              View on PolygonScan <ExternalLink className="w-3 h-3" />
+                              View on PolygonScan
+                              <ExternalLink className="w-4 h-4" />
                             </a>
-                          )}
+                          </div>
                         </div>
-                      </div>
+
+                      )}
                     </>
                   ) : (
                     <>
@@ -155,6 +188,6 @@ export default function VerifyPage() {
       <div className="mt-auto py-6 text-center text-slate-400 text-sm">
         Secured by A-Capp Protocol • Immutable Ledger Technology
       </div>
-    </div>
+    </div >
   );
 }

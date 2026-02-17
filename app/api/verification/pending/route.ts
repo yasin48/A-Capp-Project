@@ -5,10 +5,10 @@ import { getAuthenticatedUser } from '@/lib/auth/getUser';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
-    // Check if user is authenticated and has authenticator role
     const { user, role, error: authError } = await getAuthenticatedUser(request);
 
     if (authError || !user) {
@@ -25,22 +25,27 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch products with status pending or under_review
-    const { data, error } = await supabase
+    // NOTE: Do NOT use .order() - Supabase silently drops rows with NULL created_at
+    const { data: rawData, error } = await supabase
       .from('products')
       .select('*')
-      .in('status', ['pending', 'submitted', 'under_review'])
-      .order('created_at', { ascending: true });
+      .eq('status', 'pending');
 
-    console.log('[Pending Products] Query result - Count:', data?.length);
-    if (data && data.length > 0) {
-      console.log('[Pending Products] Sample products:', data.map(p => ({
-        id: p.id,
-        serial: p.serial_number,
-        status: p.status,
-        brand: p.brand
-      })));
-    }
+    // Server-side safety filter + sort oldest first in JS
+    const data = (rawData || [])
+      .filter(p => p.status === 'pending')
+      .sort((a, b) => {
+        if (!a.created_at && !b.created_at) return 0;
+        if (!a.created_at) return -1;
+        if (!b.created_at) return 1;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+
+    console.log('═══════ PENDING PRODUCTS ══════════');
+    console.log('Authenticator:', user.email);
+    console.log('Raw count:', rawData?.length ?? 0, 'Filtered count:', data.length);
+    console.log('Products:', data.map(p => ({ serial: p.serial_number, status: p.status, created: p.created_at })));
+    console.log('═══════════════════════════════════');
 
     if (error) {
       console.error('Error fetching pending products:', error);
@@ -50,13 +55,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // NOTE: Original implementation joined users to get user_email.
-    // With Supabase, you can model this as a foreign table join (e.g., 'users(email)')
-    // and then map the nested result to user_email if needed.
-
     return NextResponse.json({
       success: true,
-      data: data || [],
+      data: data,
     });
   } catch (error: any) {
     console.error('Error fetching pending products:', error);

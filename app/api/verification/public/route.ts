@@ -17,118 +17,67 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Try to find product by serial number first
-        let product: any = null;
-        let certificate: any = null;
-        let blockchainRecord: any = null;
-
-        // Search by serial number
+        // Search by serial number with direct joins
+        // We join with blockchain_records (on product_id) and verifications (on product_id)
         const { data: productData, error: productError } = await supabase
             .from('products')
-            .select('*')
+            .select(`
+                *,
+                blockchain_records (
+                    tx_hash,
+                    block_number,
+                    network,
+                    contract_address,
+                    created_at
+                ),
+                verifications (
+                    id,
+                    decision,
+                    notes,
+                    verified_at
+                )
+            `)
             .ilike('serial_number', query)
             .maybeSingle();
 
         if (productError) {
             console.error('Error searching product:', productError);
+            return NextResponse.json({ verified: false, error: 'Database error' }, { status: 500 });
         }
 
-        if (productData) {
-            product = productData;
-
-            // Get certificate for this product
-            const { data: certData, error: certError } = await supabase
-                .from('certificates')
-                .select('*')
-                .eq('product_id', product.id)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            if (certError) {
-                console.error('Error fetching certificate:', certError);
-            }
-
-            if (certData) {
-                certificate = certData;
-
-                // Get blockchain record
-                const { data: bcData, error: bcError } = await supabase
-                    .from('blockchain_records')
-                    .select('*')
-                    .eq('certificate_id', certificate.id)
-                    .maybeSingle();
-
-                if (bcError) {
-                    console.error('Error fetching blockchain record:', bcError);
-                }
-
-                if (bcData) {
-                    blockchainRecord = bcData;
-                }
-            }
-        } else {
-            // Try searching by hash
-            const { data: certByHash, error: hashError } = await supabase
-                .from('certificates')
-                .select('*, products(*)')
-                .eq('hash', query)
-                .maybeSingle();
-
-            if (hashError) {
-                console.error('Error searching by hash:', hashError);
-            }
-
-            if (certByHash) {
-                certificate = certByHash;
-                product = certByHash.products;
-
-                // Get blockchain record
-                const { data: bcData } = await supabase
-                    .from('blockchain_records')
-                    .select('*')
-                    .eq('certificate_id', certificate.id)
-                    .maybeSingle();
-
-                if (bcData) {
-                    blockchainRecord = bcData;
-                }
-            }
-        }
-
-        // If no product found
-        if (!product) {
+        if (!productData) {
             return NextResponse.json({
                 verified: false,
                 error: 'Product not found. Please check the serial number.',
             });
         }
 
-        // Check if product is certified/authenticated
-        const isVerified = product.status === 'certified' || product.status === 'authentic';
+        const isVerified = productData.status === 'certified' || productData.status === 'authentic';
+        const blockchainRecord = productData.blockchain_records?.[0] || null;
+        const verification = productData.verifications?.[0] || null;
 
         return NextResponse.json({
             verified: isVerified,
             product: {
-                id: product.id,
-                serial_number: product.serial_number,
-                brand: product.brand,
-                product_name: product.product_name,
-                status: product.status,
+                id: productData.id,
+                serial_number: productData.serial_number,
+                brand: productData.brand,
+                product_name: productData.product_name,
+                status: productData.status,
+                image: productData.images?.[0] || null,
             },
-            certificate: certificate ? {
-                id: certificate.id,
-                hash: certificate.hash,
-                decision: certificate.authentication_decision,
-                timestamp: certificate.timestamp,
-                signature: certificate.blockchain_tx_hash || certificate.hash?.substring(0, 20) + '...',
-            } : null,
             blockchainRecord: blockchainRecord ? {
                 txHash: blockchainRecord.tx_hash,
                 blockNumber: blockchainRecord.block_number,
                 network: blockchainRecord.network,
                 polygonscanUrl: `https://amoy.polygonscan.com/tx/${blockchainRecord.tx_hash}`,
+                timestamp: blockchainRecord.created_at
             } : null,
+            verification: verification ? {
+                decision: verification.decision,
+                notes: verification.notes,
+                date: verification.verified_at
+            } : null
         });
     } catch (error: any) {
         console.error('Public verification error:', error);
