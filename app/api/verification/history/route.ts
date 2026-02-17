@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from '@/lib/auth/getUser';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
     try {
@@ -25,6 +26,9 @@ export async function GET(request: NextRequest) {
             );
         }
 
+        console.log('═══════ VERIFICATION HISTORY ═══════');
+        console.log('Authenticator ID:', user.id);
+
         // Fetch verifications by this authenticator with product details
         const { data, error } = await supabase
             .from('verifications')
@@ -44,6 +48,10 @@ export async function GET(request: NextRequest) {
       `)
             .eq('authenticator_id', user.id)
             .order('verified_at', { ascending: false });
+
+        console.log('Query result count:', data?.length);
+        console.log('All verification IDs:', data?.map(v => v.id));
+        console.log('═══════════════════════════════════');
 
         if (error) {
             console.error('Error fetching verification history:', error);

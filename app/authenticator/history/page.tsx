@@ -7,7 +7,6 @@ import { MotionWrapper, StaggerContainer, FadeItem } from '@/components/MotionWr
 import { CheckCircle2, XCircle, Calendar, Package, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-export const dynamic = 'force-dynamic';
 
 interface VerificationHistory {
     verificationId: string;
@@ -39,7 +38,7 @@ export default function AuthenticatorHistoryPage() {
 
     const fetchHistory = async () => {
         try {
-            const response = await fetch('/api/verification/history');
+            const response = await fetch('/api/verification/history', { cache: 'no-store' });
             const result = await response.json();
             if (result.success) {
                 setHistory(result.data);
@@ -182,8 +181,8 @@ export default function AuthenticatorHistoryPage() {
                                                 {/* Decision Badge */}
                                                 <span
                                                     className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${item.decision === 'authentic'
-                                                            ? 'bg-green-50 text-green-700 border-green-200'
-                                                            : 'bg-red-50 text-red-700 border-red-200'
+                                                        ? 'bg-green-50 text-green-700 border-green-200'
+                                                        : 'bg-red-50 text-red-700 border-red-200'
                                                         }`}
                                                 >
                                                     {item.decision === 'authentic' ? (
