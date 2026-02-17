@@ -6,8 +6,11 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/glass-card';
 import { MotionWrapper, StaggerContainer, FadeItem } from '@/components/MotionWrapper';
-import { Plus, Package, Calendar, CheckCircle2, Clock, XCircle, Shield, ArrowRight, Search } from 'lucide-react';
+import { Plus, Package, Calendar, CheckCircle2, Clock, XCircle, Shield, ArrowRight, Search, FileText, Download, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { pdf } from '@react-pdf/renderer';
+import { Certificate } from '@/components/Certificate';
+import QRCode from 'qrcode';
 
 
 
@@ -27,6 +30,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -54,6 +58,53 @@ export default function DashboardPage() {
       setError(err.message || 'An error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadCertificate = async (productId: string, productName: string) => {
+    try {
+      setDownloadingId(productId);
+
+      // 1. Fetch certificate data
+      const response = await fetch(`/api/certificates/generate?productId=${productId}`);
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate certificate data');
+      }
+
+      // 2. Generate QR Code
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://a-capp-project-three.vercel.app';
+      const qrCodeUrl = await QRCode.toDataURL(
+        `${siteUrl}/verify/${result.data.serialNumber}`,
+        { margin: 1, width: 200 }
+      );
+
+      // 3. Generate PDF Blob
+      const blob = await pdf(
+        <Certificate
+          data={{
+            ...result.data,
+            qrCodeUrl
+          }}
+        />
+      ).toBlob();
+
+      // 4. Trigger Download
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Certificate-${productName.replace(/\s+/g, '-')}-${result.data.serialNumber}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+    } catch (err: any) {
+      console.error('Download error:', err);
+      setError(err.message || 'Failed to download certificate');
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -200,12 +251,32 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
+
                     <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between text-sm text-slate-500">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5" />
                         {new Date(product.submitted_at).toLocaleDateString()}
                       </div>
-                      <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all duration-300 text-primary" />
+
+                      <div className="flex items-center gap-2">
+                        {(product.status === 'authentic' || product.status === 'certified') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 rounded-full hover:bg-indigo-50 text-indigo-600"
+                            onClick={() => handleDownloadCertificate(product.id, product.product_name)}
+                            disabled={downloadingId === product.id}
+                            title="Download Certificate"
+                          >
+                            {downloadingId === product.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4" />
+                            )}
+                          </Button>
+                        )}
+                        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all duration-300 text-primary" />
+                      </div>
                     </div>
                   </div>
                 </GlassCard>
