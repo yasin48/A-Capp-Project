@@ -76,7 +76,7 @@ export async function middleware(req: NextRequest) {
 
   // Protected API routes
   const protectedApiRoutes = ['/api/products', '/api/verification', '/api/certificates', '/api/blockchain'];
-  const isProtectedApiRoute = protectedApiRoutes.some((route) => pathname.startsWith(route));
+  const isProtectedApiRoute = protectedApiRoutes.some((route) => pathname.startsWith(route)) && !pathname.startsWith('/api/verification/public');
 
   // Allow public routes
   if (isPublicRoute) {
