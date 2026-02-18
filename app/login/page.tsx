@@ -124,14 +124,24 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 space-y-8 max-w-lg">
-          <blockquote className="text-2xl font-light leading-relaxed">
-            "I finally feel safe buying pre-owned luxury bags. The verification process was smooth and the certificate adds real value."
-          </blockquote>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-white to-slate-300" />
-            <div>
-              <div className="font-medium">Jessica K.</div>
-              <div className="text-slate-400 text-sm">Bag Collector</div>
+          <div className="space-y-6">
+            <h2 className="text-3xl font-heading font-bold text-white leading-tight">
+              Manage Your <br />
+              <span className="text-primary-300">Digital Portfolio</span>
+            </h2>
+            <p className="text-primary-100/80 text-lg leading-relaxed font-light">
+              Access your dashboard to track verification requests, view your blockchain certificates, and manage your authenticated luxury assets in one secure place.
+            </p>
+          </div>
+
+          <div className="pt-8 border-t border-white/10">
+            <div className="flex items-center gap-4 text-sm text-white/60">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                System Operational
+              </div>
+              <span>•</span>
+              <div>Secure 256-bit Encryption</div>
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { LogOut, Shield, LayoutDashboard, Package, ShieldCheck, Menu, X } from 'lucide-react';
+import { LogOut, Shield, LayoutDashboard, Package, ShieldCheck, Menu, X, MessageSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -109,6 +109,7 @@ export default function Navbar() {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-2">
               <NavLink href="/verify" icon={ShieldCheck}>Verify</NavLink>
+              <NavLink href="/contact" icon={MessageSquare}>Contact</NavLink>
 
               {user && (
                 <>
@@ -213,6 +214,9 @@ export default function Navbar() {
                 <nav className="flex-1 overflow-y-auto p-4 space-y-1">
                   <MobileNavLink href="/verify" icon={ShieldCheck} onClick={() => setMobileMenuOpen(false)}>
                     Verify Product
+                  </MobileNavLink>
+                  <MobileNavLink href="/contact" icon={MessageSquare} onClick={() => setMobileMenuOpen(false)}>
+                    Contact Us
                   </MobileNavLink>
 
                   {user && (

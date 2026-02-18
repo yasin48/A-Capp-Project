@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Sparkles } from 'lucide-react';
+import { Shield, Lock, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const dynamic = 'force-dynamic';
@@ -128,21 +128,42 @@ export default function RegisterPage() {
 
         <div className="relative z-10 max-w-md text-center">
           <div className="w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center mx-auto mb-8 animate-float">
-            <Sparkles className="w-10 h-10 text-primary" />
+            <Shield className="w-10 h-10 text-primary" />
           </div>
-          <h2 className="text-3xl font-heading font-bold text-slate-900 mb-4">Join 50,000+ Collectors</h2>
-          <p className="text-slate-600 mb-8">
-            Protect your collection with the world's most trusted verification platform.
+          <h2 className="text-3xl font-heading font-bold text-slate-900 mb-4">Secure Your Luxury Items</h2>
+          <p className="text-slate-600 mb-8 max-w-sm mx-auto">
+            Create an account to start authenticating your collection with blockchain technology.
           </p>
 
-          <div className="grid grid-cols-2 gap-4 text-left">
-            <div className="p-4 bg-white rounded-xl shadow-sm border border-slate-100">
-              <div className="font-bold text-slate-900 text-lg">10k+</div>
-              <div className="text-xs text-slate-500">Verified Products</div>
+          <div className="space-y-4 text-left w-full max-w-sm">
+            <div className="flex items-start gap-4 p-4 bg-white rounded-xl shadow-sm border border-slate-100">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Shield className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 mb-1">Expert Verification</h3>
+                <p className="text-xs text-slate-500">Every item is reviewed by professional authenticators.</p>
+              </div>
             </div>
-            <div className="p-4 bg-white rounded-xl shadow-sm border border-slate-100">
-              <div className="font-bold text-slate-900 text-lg">100%</div>
-              <div className="text-xs text-slate-500">Uptime SLA</div>
+
+            <div className="flex items-start gap-4 p-4 bg-white rounded-xl shadow-sm border border-slate-100">
+              <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
+                <Lock className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 mb-1">Blockchain Security</h3>
+                <p className="text-xs text-slate-500">Immutable records that cannot be forged or altered.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4 p-4 bg-white rounded-xl shadow-sm border border-slate-100">
+              <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                <Globe className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 mb-1">Global Access</h3>
+                <p className="text-xs text-slate-500">Verify authenticity from anywhere in the world instantly.</p>
+              </div>
             </div>
           </div>
         </div>

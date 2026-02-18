@@ -247,7 +247,7 @@ export default function DirectVerifyPage() {
                                                 {result.error || "This serial number could not be found in the registry."}
                                             </p>
                                             <div className="bg-slate-50 text-slate-600 p-4 rounded-xl text-sm max-w-md mx-auto border border-slate-200">
-                                                If you believe this is an error, please check the serial number for typos or contact support.
+                                                If you believe this is an error, please check the serial number for typos or <a href="/contact" className="text-primary hover:underline font-medium">contact support</a>.
                                             </div>
                                         </>
                                     )}

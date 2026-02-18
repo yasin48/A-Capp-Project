@@ -111,11 +111,7 @@ export default function Home() {
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">
                 Ready to verify your collection?
               </h2>
-              <p className="text-slate-300 text-xl mb-10 font-light">
-                "Bought a pre-owned Rolex and needed peace of mind. A-Capp's verification gave me the confidence I needed."
-                <br />
-                <span className="text-white font-medium mt-2 block">— Sarah M., Watch Collector</span>
-              </p>
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link href="/register">
                   <Button size="lg" className="rounded-full bg-white text-slate-900 hover:bg-slate-100 px-8 h-14 text-lg">
