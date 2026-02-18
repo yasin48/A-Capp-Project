@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/auth/AuthContext';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/glass-card';
 import { MotionWrapper, StaggerContainer, FadeItem } from '@/components/MotionWrapper';
-import { Plus, Package, Calendar, CheckCircle2, Clock, XCircle, Shield, ArrowRight, Search, FileText, Download, Loader2 } from 'lucide-react';
+import { Plus, Package, Calendar, CheckCircle2, Clock, XCircle, Shield, Search, FileText, Download, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { pdf } from '@react-pdf/renderer';
 import { Certificate } from '@/components/Certificate';
@@ -264,7 +264,10 @@ export default function DashboardPage() {
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0 rounded-full hover:bg-indigo-50 text-indigo-600"
-                            onClick={() => handleDownloadCertificate(product.id, product.product_name)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handleDownloadCertificate(product.id, product.product_name);
+                            }}
                             disabled={downloadingId === product.id}
                             title="Download Certificate"
                           >
@@ -275,7 +278,6 @@ export default function DashboardPage() {
                             )}
                           </Button>
                         )}
-                        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all duration-300 text-primary" />
                       </div>
                     </div>
                   </div>

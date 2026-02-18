@@ -164,17 +164,68 @@ export default function VerifyPage() {
 
                       )}
                     </>
-                  ) : (
+                  ) : result.verification?.decision === 'not_authentic' ? (
                     <>
                       <div className="w-24 h-24 rounded-full bg-red-50 mx-auto mb-6 flex items-center justify-center">
-                        <AlertTriangle className="w-12 h-12 text-red-500" />
+                        <XCircle className="w-12 h-12 text-red-500" />
                       </div>
-                      <h2 className="text-3xl font-bold text-slate-900 mb-2">Verification Failed</h2>
+                      <h2 className="text-3xl font-bold text-slate-900 mb-2">Not Authentic</h2>
                       <p className="text-red-600 font-medium mb-8">
+                        Verified on Blockchain Ledger as Not Authentic
+                      </p>
+
+                      <div className="grid grid-cols-1 gap-4 text-left bg-slate-50 rounded-2xl p-6 border border-slate-100 mb-6">
+                        <div>
+                          <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Product Name</div>
+                          <div className="font-bold text-slate-900 text-lg">{result.product.product_name}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">Brand</div>
+                          <div className="font-bold text-slate-900 text-lg">{result.product.brand}</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-100 text-left">
+                        <h3 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+                          🔗 Permanent Record
+                        </h3>
+                        <p className="text-sm text-red-800 mb-4">
+                          This product was verified by our experts and determined to be <strong>not authentic</strong>. This decision is permanently recorded on the blockchain for consumer safety.
+                        </p>
+
+                        {result.blockchainRecord && (
+                          <div className="space-y-4 text-sm whitespace-normal break-all">
+                            <div>
+                              <span className="text-red-800/70 block text-xs uppercase tracking-wide mb-1">Transaction Hash</span>
+                              <p className="font-mono text-xs text-red-700 bg-white/50 p-2 rounded border border-red-100">
+                                {result.blockchainRecord.txHash}
+                              </p>
+                            </div>
+
+                            <a
+                              href={result.blockchainRecord.polygonscanUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-medium shadow-sm hover:shadow-md"
+                            >
+                              View on PolygonScan
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-24 h-24 rounded-full bg-slate-100 mx-auto mb-6 flex items-center justify-center">
+                        <Search className="w-12 h-12 text-slate-400" />
+                      </div>
+                      <h2 className="text-3xl font-bold text-slate-900 mb-2">Product Not Found</h2>
+                      <p className="text-slate-500 font-medium mb-8">
                         {result.error || "This serial number could not be found in the registry."}
                       </p>
-                      <div className="bg-red-50 text-red-800 p-4 rounded-xl text-sm max-w-md mx-auto">
-                        If you believe this is an error, please contact support or check the serial number for typos.
+                      <div className="bg-slate-50 text-slate-600 p-4 rounded-xl text-sm max-w-md mx-auto border border-slate-200">
+                        If you believe this is an error, please check the serial number for typos or contact support.
                       </div>
                     </>
                   )}

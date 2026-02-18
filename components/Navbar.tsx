@@ -47,7 +47,7 @@ export default function Navbar() {
     }
   };
 
-  const NavLink = ({ href, children, icon: Icon }: { href: string; children: React.ReactNode; icon?: any }) => {
+  const NavLink = ({ href, children, icon: Icon, className }: { href: string; children: React.ReactNode; icon?: any; className?: string }) => {
     const isActive = pathname === href;
     return (
       <Link href={href}>
@@ -55,7 +55,8 @@ export default function Navbar() {
           "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300",
           isActive
             ? "bg-primary/10 text-primary shadow-sm"
-            : "text-slate-600 hover:text-primary hover:bg-slate-50"
+            : "text-slate-600 hover:text-primary hover:bg-slate-50",
+          className
         )}>
           {Icon && <Icon className="w-4 h-4" />}
           {children}
@@ -113,8 +114,11 @@ export default function Navbar() {
                 <>
                   <NavLink href="/dashboard" icon={LayoutDashboard}>Dashboard</NavLink>
                   <NavLink href="/submit" icon={Package}>Submit</NavLink>
-                  {role === 'authenticator' && (
+                  {role === 'authenticator' || role === 'admin' ? (
                     <NavLink href="/authenticator" icon={Shield}>Authenticator</NavLink>
+                  ) : null}
+                  {role === 'admin' && (
+                    <NavLink href="/admin" icon={Shield} className="text-red-600 hover:text-red-700 hover:bg-red-50">Admin</NavLink>
                   )}
                 </>
               )}
@@ -219,9 +223,14 @@ export default function Navbar() {
                       <MobileNavLink href="/submit" icon={Package} onClick={() => setMobileMenuOpen(false)}>
                         Submit Product
                       </MobileNavLink>
-                      {role === 'authenticator' && (
+                      {(role === 'authenticator' || role === 'admin') && (
                         <MobileNavLink href="/authenticator" icon={Shield} onClick={() => setMobileMenuOpen(false)}>
                           Authenticator
+                        </MobileNavLink>
+                      )}
+                      {role === 'admin' && (
+                        <MobileNavLink href="/admin" icon={Shield} onClick={() => setMobileMenuOpen(false)}>
+                          Admin Panel
                         </MobileNavLink>
                       )}
                     </>

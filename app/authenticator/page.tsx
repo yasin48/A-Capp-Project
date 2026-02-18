@@ -34,7 +34,7 @@ export default function AuthenticatorPage() {
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
-    if (!authLoading && user && role === 'authenticator') {
+    if (!authLoading && user && (role === 'authenticator' || role === 'admin')) {
       fetchPendingProducts();
     } else if (!authLoading) {
       setLoading(false);
@@ -83,7 +83,7 @@ export default function AuthenticatorPage() {
     </div>
   );
 
-  if (!user || role !== 'authenticator') return (
+  if (!user || (role !== 'authenticator' && role !== 'admin')) return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
       <GlassCard className="max-w-md text-center p-8">
         <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />

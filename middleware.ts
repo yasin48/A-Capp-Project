@@ -71,11 +71,11 @@ export async function middleware(req: NextRequest) {
   }
 
   // Protected routes
-  const protectedRoutes = ['/dashboard', '/submit', '/authenticator'];
+  const protectedRoutes = ['/dashboard', '/submit', '/authenticator', '/admin'];
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
 
   // Protected API routes
-  const protectedApiRoutes = ['/api/products', '/api/verification', '/api/certificates', '/api/blockchain'];
+  const protectedApiRoutes = ['/api/products', '/api/verification', '/api/certificates', '/api/blockchain', '/api/admin'];
   const isProtectedApiRoute = protectedApiRoutes.some((route) => pathname.startsWith(route)) && !pathname.startsWith('/api/verification/public');
 
   // Allow public routes
@@ -94,10 +94,21 @@ export async function middleware(req: NextRequest) {
   // Check role for authenticator route
   if (pathname.startsWith('/authenticator') && session) {
     const userRole = session.user.user_metadata?.role || 'user';
-    if (userRole !== 'authenticator') {
+    if (userRole !== 'authenticator' && userRole !== 'admin') { // Admin can access everything
       const redirectUrl = req.nextUrl.clone();
       redirectUrl.pathname = '/dashboard';
       redirectUrl.searchParams.set('error', 'unauthorized');
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  // Check role for admin route
+  if (pathname.startsWith('/admin') && session) {
+    const userRole = session.user.user_metadata?.role || 'user';
+    if (userRole !== 'admin') {
+      const redirectUrl = req.nextUrl.clone();
+      redirectUrl.pathname = '/dashboard';
+      redirectUrl.searchParams.set('error', 'unauthorized_admin');
       return NextResponse.redirect(redirectUrl);
     }
   }

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (role !== 'authenticator') {
+    if (role !== 'authenticator' && role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized. Only authenticators can verify products.' },
         { status: 403 }
@@ -38,6 +38,20 @@ export async function POST(request: NextRequest) {
     if (decision !== 'authentic' && decision !== 'not_authentic') {
       return NextResponse.json(
         { success: false, error: 'Invalid decision. Must be "authentic" or "not_authentic"' },
+        { status: 400 }
+      );
+    }
+
+    // Check if product is already verified
+    const { data: existingVerification } = await supabase
+      .from('verifications')
+      .select('*')
+      .eq('product_id', productId)
+      .single();
+
+    if (existingVerification) {
+      return NextResponse.json(
+        { success: false, error: 'Product has already been verified' },
         { status: 400 }
       );
     }
@@ -133,28 +147,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If product is verified as authentic, auto-create certificate and store on blockchain
+    // Universal Blockchain Storage (Authentic & Not Authentic)
     let certificateResult: any = null;
     let blockchainResult: any = null;
 
+    // Step 1: Generate hash for ALL decisions
+    const { generateHash } = await import('@/lib/blockchain/hash');
+
+    const certificateData = {
+      productId: productId,
+      serialNumber: '', // We need to fetch product details to get this, or pass it in body. Best to fetch.
+      brand: '',
+      productName: '',
+      decision: decision, // 'authentic' OR 'not_authentic'
+      timestamp: new Date().toISOString(),
+      authenticatorId: user.id,
+      notes: notes || (decision === 'authentic' ? 'Product verified as authentic' : 'Product determined to be not authentic')
+    };
+
+    // valid fix: fetch product details for the certificate/hash data
+    const { data: productDetails } = await supabase.from('products').select('*').eq('id', productId).single();
+    if (productDetails) {
+      certificateData.serialNumber = productDetails.serial_number;
+      certificateData.brand = productDetails.brand;
+      certificateData.productName = productDetails.product_name;
+    }
+
+    const jsonData = JSON.stringify(certificateData, null, 2);
+    const hash = generateHash(jsonData);
+
+    // Step 2: Create certificate (Only for authentic products)
     if (decision === 'authentic') {
-      // Step 1: Generate hash
-      const { generateHash } = await import('@/lib/blockchain/hash');
-
-      const certificateData = {
-        productId: productId,
-        authenticationDecision: 'authentic',
-        timestamp: new Date().toISOString(),
-        notes: notes || 'Product verified as authentic',
-      };
-
-      const jsonData = JSON.stringify(certificateData, null, 2);
-      const hash = generateHash(jsonData);
       const certificateId = uuidv4();
+      console.log('🔐 Generated hash for certificate:', hash);
 
-      console.log('🔐 Generated hash:', hash);
-
-      // Step 2: Try to create certificate (non-blocking)
       try {
         const { error: certError } = await supabase.from('certificates').insert({
           id: certificateId,
@@ -171,51 +197,60 @@ export async function POST(request: NextRequest) {
       } catch (certErr: any) {
         console.error('⚠️ Certificate error:', certErr.message);
       }
+    }
 
-      // Step 3: Store on blockchain (always attempt, independent of certificate)
-      try {
-        console.log('⛓️ Attempting blockchain storage...');
-        const { storeOnBlockchain } = await import('@/lib/blockchain/service');
-        const bcResult = await storeOnBlockchain(productId, hash);
+    // Step 3: Store on blockchain (ALL Verifications)
+    try {
+      console.log(`⛓️ Attempting blockchain storage for ${decision} verification...`);
+      const { storeOnBlockchain } = await import('@/lib/blockchain/service');
+      const bcResult = await storeOnBlockchain(productId, hash);
 
-        console.log('⛓️ Blockchain result:', JSON.stringify(bcResult));
+      console.log('⛓️ Blockchain result:', JSON.stringify(bcResult));
 
-        if (bcResult.success && bcResult.txHash) {
-          blockchainResult = {
-            txHash: bcResult.txHash,
-            blockNumber: bcResult.blockNumber,
-            network: 'polygon-amoy',
-          };
+      if (bcResult.success && bcResult.txHash) {
+        blockchainResult = {
+          txHash: bcResult.txHash,
+          blockNumber: bcResult.blockNumber,
+          network: 'polygon-amoy',
+        };
 
-          // Save blockchain record
-          const { error: bcDbError } = await supabase.from('blockchain_records').insert({
-            id: uuidv4(),
-            product_id: productId,
-            hash,
-            tx_hash: bcResult.txHash,
-            block_number: bcResult.blockNumber || 0,
-            network: 'polygon-amoy',
-            contract_address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '',
-          });
+        // Save blockchain record with valid decision
+        const { error: bcDbError } = await supabase.from('blockchain_records').insert({
+          id: uuidv4(),
+          product_id: productId,
+          hash,
+          tx_hash: bcResult.txHash,
+          block_number: bcResult.blockNumber || 0,
+          network: 'polygon-amoy',
+          contract_address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '',
+          decision: decision // Store the decision!
+        });
 
-          if (bcDbError) {
-            console.error('⚠️ blockchain_records insert failed:', bcDbError.message, bcDbError.hint || '');
-          } else {
-            console.log('✅ Blockchain record saved to DB');
-          }
+        if (bcDbError) {
+          console.error('⚠️ blockchain_records insert failed:', bcDbError.message, bcDbError.hint || '');
+        } else {
+          console.log('✅ Blockchain record saved to DB');
+        }
 
-          // Update product status to certified
+        // Update product status to certified/not_authentic (already done above, but good to confirm)
+        // If it was authentic, we already set it to 'certified' via 'storeOnBlockchain' usually? 
+        // Actually storeOnBlockchain doesn't update DB status usually, we do it here.
+        // If authentic => 'certified' (indicating blockchain backing). 
+        // If not_authentic => 'not_authentic' (but now backed by blockchain too).
+
+        if (decision === 'authentic') {
           await supabase.from('products')
             .update({ status: 'certified' })
             .eq('id', productId);
-
-          console.log('✅ Blockchain storage successful:', bcResult.txHash);
-        } else {
-          console.error('❌ Blockchain storage failed:', bcResult.error || 'Unknown error');
         }
-      } catch (bcError: any) {
-        console.error('❌ Blockchain error (non-blocking):', bcError.message);
+        // For not_authentic, status is already 'not_authentic', which is fine.
+
+        console.log('✅ Blockchain storage successful:', bcResult.txHash);
+      } else {
+        console.error('❌ Blockchain storage failed:', bcResult.error || 'Unknown error');
       }
+    } catch (bcError: any) {
+      console.error('❌ Blockchain error (non-blocking):', bcError.message);
     }
 
     return NextResponse.json({

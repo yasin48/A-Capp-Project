@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (role !== 'authenticator') {
+    if (role !== 'authenticator' && role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized. Only authenticators can access this endpoint.' },
         { status: 403 }
