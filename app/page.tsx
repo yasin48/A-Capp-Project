@@ -132,7 +132,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="py-12 border-t border-slate-200 bg-white">
         <div className="container mx-auto px-6 text-center text-slate-500">
-          <p>© {new Date().getFullYear()} A-Capp Protocol. Built with precision.</p>
+          <p>© {new Date().getFullYear()} All rights reserved.</p>
         </div>
       </footer>
     </div>
