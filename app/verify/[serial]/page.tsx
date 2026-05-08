@@ -259,7 +259,7 @@ export default function DirectVerifyPage() {
             </MotionWrapper>
 
             <div className="mt-auto py-6 text-center text-slate-400 text-sm">
-                Secured by A-Capp Protocol • Immutable Ledger Technology
+                Secured by Blockchain • Immutable Ledger Technology
             </div>
         </div >
     );

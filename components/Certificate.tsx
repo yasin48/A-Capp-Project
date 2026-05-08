@@ -216,7 +216,7 @@ export const Certificate = ({ data }: CertificateProps) => (
                 {/* Footer */}
                 <View style={styles.footer}>
                     <View>
-                        <Text style={{ fontSize: 10, color: '#64748B' }}>Secured by A-Capp Protocol</Text>
+                        <Text style={{ fontSize: 10, color: '#64748B' }}>Secured by Blockchain Protocol</Text>
                         <Text style={{ fontSize: 8, color: '#94A3B8', marginTop: 4 }}>Immutable Ledger Technology • Polygon Network</Text>
                     </View>
 
