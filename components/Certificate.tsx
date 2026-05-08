@@ -153,7 +153,6 @@ export const Certificate = ({ data }: CertificateProps) => (
                                 fill="#4F46E5"
                             />
                         </Svg>
-                        <Text style={styles.logoText}>A-Capp</Text>
                     </View>
                     <Text style={styles.title}>Certificate of Authenticity</Text>
                 </View>
@@ -225,7 +224,6 @@ export const Certificate = ({ data }: CertificateProps) => (
                         {data.qrCodeUrl && (
                             <Image src={data.qrCodeUrl} style={styles.qrCode} />
                         )}
-                        <Text style={styles.footerText}>Review on A-Capp</Text>
                     </View>
                 </View>
 

@@ -33,7 +33,6 @@ export default function Footer() {
                             <div className="w-9 h-9 bg-gradient-to-br from-primary-600 to-accent rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-primary/30 transition-shadow">
                                 <Shield className="w-5 h-5 text-white" />
                             </div>
-                            <span className="text-xl font-heading font-bold text-white">A-Capp</span>
                         </Link>
                         <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
                             Blockchain-powered product authentication. Trust, transparency, and security for every consumer.

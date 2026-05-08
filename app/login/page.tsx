@@ -119,7 +119,6 @@ export default function LoginPage() {
         <div className="relative z-10">
           <Link href="/" className="flex items-center gap-2 mb-12">
             <Shield className="w-8 h-8 text-white" />
-            <span className="text-2xl font-heading font-bold">A-Capp</span>
           </Link>
         </div>
 

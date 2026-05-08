@@ -101,9 +101,6 @@ export default function Navbar() {
               <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-accent rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-primary/50 transition-shadow">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <span className="text-2xl font-heading font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
-                A-Capp
-              </span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -200,7 +197,6 @@ export default function Navbar() {
                     <div className="w-8 h-8 bg-gradient-to-br from-primary-600 to-accent rounded-lg flex items-center justify-center">
                       <Shield className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-lg font-heading font-bold text-slate-900">A-Capp</span>
                   </Link>
                   <button
                     onClick={() => setMobileMenuOpen(false)}
