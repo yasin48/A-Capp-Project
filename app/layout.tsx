@@ -18,7 +18,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'A-Capp | Premium Product Authentication',
+  title: 'Premium Product Authentication',
   description: 'Blockchain-based product authentication and verification system.',
 };
 
