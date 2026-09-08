@@ -1,0 +1,24 @@
+QUALTRICS IMPLEMENTATION CHECKLIST
+
+Flow:
+Prolific -> Qualtrics consent/screening -> random assignment -> one stimulus -> manipulation checks -> main scales -> controls/demographics -> debrief -> Prolific completion.
+
+Use a Randomizer that evenly presents 1 of 8 branches.
+
+Embedded Data mapping:
+C1: condition=1; transparency=0; expert_identity=0; immutability=0
+C2: condition=2; transparency=0; expert_identity=0; immutability=1
+C3: condition=3; transparency=0; expert_identity=1; immutability=0
+C4: condition=4; transparency=0; expert_identity=1; immutability=1
+C5: condition=5; transparency=1; expert_identity=0; immutability=0
+C6: condition=6; transparency=1; expert_identity=0; immutability=1
+C7: condition=7; transparency=1; expert_identity=1; immutability=0
+C8: condition=8; transparency=1; expert_identity=1; immutability=1
+
+Stimulus URL pattern:
+https://YOUR-VERCEL-DOMAIN/experiment/${e://Field/condition}
+
+Do not expose the condition number or treatment labels to participants.
+Use a minimum viewing time such as 10-15 seconds.
+Keep manipulation checks after exposure, not before.
+Do not automatically exclude manipulation-check failures from the primary analysis.
