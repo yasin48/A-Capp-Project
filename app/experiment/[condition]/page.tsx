@@ -82,16 +82,7 @@ export default function Page({
                 />
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-3 text-center text-xs text-slate-500">
-                <div className="rounded-xl border border-slate-200 bg-white p-3">
-                  Front view
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-white p-3">
-                  Detail view
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-white p-3">
-                  Interior view
-                </div>
+              
               </div>
             </div>
 
