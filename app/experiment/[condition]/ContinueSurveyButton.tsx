@@ -3,15 +3,25 @@
 import { useState } from "react";
 
 export default function ContinueSurveyButton() {
-  const [finished, setFinished] = useState(false);
+  const [showMessage, setShowMessage] = useState(false);
 
-  if (finished) {
+  const handleContinue = () => {
+    if (window.opener && !window.opener.closed) {
+      window.opener.focus();
+      window.close();
+      setTimeout(() => setShowMessage(true), 250);
+      return;
+    }
+
+    setShowMessage(true);
+  };
+
+  if (showMessage) {
     return (
-      <div style={{ textAlign: "center", padding: "24px" }}>
-        <h2>Thank you</h2>
-        <p>
-          Please return to the survey tab in your browser to continue
-          the questionnaire.
+      <div className="w-full rounded-xl border border-slate-200 bg-white px-5 py-4 text-center">
+        <p className="font-medium text-slate-900">Return to your survey</p>
+        <p className="mt-1 text-sm text-slate-600">
+          Please switch back to the Qualtrics survey tab and click Next to continue.
         </p>
       </div>
     );
@@ -20,8 +30,8 @@ export default function ContinueSurveyButton() {
   return (
     <button
       type="button"
-      onClick={() => setFinished(true)}
-      className="w-full rounded-lg bg-black px-6 py-3 text-white"
+      onClick={handleContinue}
+      className="w-full rounded-xl bg-slate-900 px-5 py-4 font-medium text-white"
     >
       Continue survey
     </button>
