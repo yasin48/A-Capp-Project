@@ -1,24 +1,16 @@
-"use client";
+<button
+  onClick={() => {
+    window.close();
 
-export default function ContinueSurveyButton() {
-  const returnToSurvey = () => {
-    if (window.history.length > 1) {
-      window.history.back();
-      return;
-    }
-
-    if (document.referrer) {
-      window.location.href = document.referrer;
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={returnToSurvey}
-      className="w-full rounded-xl bg-slate-900 px-5 py-4 font-medium text-white"
-    >
-      Continue survey
-    </button>
-  );
-}
+    setTimeout(() => {
+      document.body.innerHTML = `
+        <div style="font-family:Arial,sans-serif;text-align:center;padding:60px 20px;">
+          <h2>Thank you</h2>
+          <p>Please return to the survey tab to continue.</p>
+        </div>
+      `;
+    }, 300);
+  }}
+>
+  Continue survey
+</button>
