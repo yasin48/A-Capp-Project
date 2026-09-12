@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import ContinueSurveyButton from "./ContinueSurveyButton";
 
 type Treatment = {
   transparency: boolean;
@@ -207,12 +208,7 @@ export default function Page({
                 )}
               </section>
 
-              <button
-                type="button"
-                className="w-full rounded-xl bg-slate-900 px-5 py-4 font-medium text-white"
-              >
-                Continue survey
-              </button>
+              <ContinueSurveyButton />
 
               <div className="mt-4 flex items-center justify-center gap-5 pb-8 text-xs text-slate-400">
                 <span>Buyer protection</span>
